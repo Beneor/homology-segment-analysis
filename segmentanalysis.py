@@ -8,9 +8,13 @@ computes frequencies of occurence for segments of different length within chromo
 makes table for the normalized frequencies,
 and calculates Pearson correlation between fragment frequencies for chromosome discs and ectopic contact frequencies
 '''
-
 import argparse
 import glob
+import sys
+from os.path import join, abspath, curdir
+sys.path.append(abspath(join(curdir, 'segmentanalysis')))
+from segmentanalysis.segmentutils import revcomp
+
 
 # 0. ANALYZING INPUT PARAMETERS
 
@@ -21,14 +25,18 @@ parser.add_argument("segment", type=str,
                     help="segment of chromosome to analyze (16113516:16900779) in BED-file notation (starting from 0, end is not included)")
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
                     help='Set of fragment sizes to search')
+parser.add_argument("-d", "--fragmentdensity", type=int, default=25,
+                    help='Average frequency of fragments in letters Default 25 meand that in average each 25-th letter will be start of fragment')
+
 parser.add_argument("-c", "--chunk", type=int, default=10000,
                     help='Chunk size to divide chromosome')
 parser.add_argument("-i", "--iterations", type=int, default=10,
                     help='Number of iterations for fragment splitting')
-
 args = parser.parse_args()
 
+# Processign command-line arguments
 start, stop = [int(coord) for coord in args.segment.split(':')]
+fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
 
 # I. INPUT FILES PREPARATION
 
@@ -36,41 +44,23 @@ start, stop = [int(coord) for coord in args.segment.split(':')]
 with open(args.chromosomeseq) as chrSeqFile:
     chromosome=''.join( [line.strip() for line in chrSeqFile.readlines()] ).lower()
     segment = chromosome[start:stop]
-    f2 = open(r"Segment.txt", "w")  # File containing segment sequence
-    f2.write(segment)
-    f2.close()
+#    f2 = open(r"Segment.txt", "w")  # File containing segment sequence
+#    f2.write(segment)
+#    f2.close()
 
 # 2. Preparation of complementary segment
-f = open(r"Segment.txt", "r")
-f2 = open(r"c-Segment.txt", "w")
+segmentRevComp = revcomp(segment)
+#f = open(r"Segment.txt", "r")
+#f2 = open(r"c-Segment.txt", "w")
 
-for line in f:
-    x = str(line)
-    for i in range(0, len(x)):
-        j = int(len(x) - i - 1)
-        s = x[j]
-        if s == "a":
-            f2.write("t")
-        elif s == "g":
-            f2.write("c")
-        elif s == "c":
-            f2.write("g")
-        elif s == "t":
-            f2.write("a")
-        else:
-            f2.write("n")
 
-# 3. Chromosome segmentation
-
-# Modules to be used
-
+# 3. Chromosome segmentation by chunks
 
 # Fragments files mask
 fileSuffix = '-x-fr.txt'
 filesMask = '*' + fileSuffix
 resultFiles = glob.glob(filesMask)
 
-length = 10  # the length of chromosome segments (in kilobases)
 begin = 0  # the firts part start
 
 # Sequence segmentation
@@ -79,7 +69,7 @@ fragments = open(r"x-small.txt", "r")  # Chromosome sequence to be segmented
 for line in fragments:
     x = str(line)
     totallength = len(line)  # the length of x (in bases)
-    seglength = int(length) * 1000  # the length of part (in bases)
+    seglength = args.chunk # the length of chunk (in bases)
     number = int(totallength / seglength)  # the number of parts
     for i in range(1, number + 1):
         outputFileName = str(i) + fileSuffix
@@ -95,8 +85,13 @@ fragments.close()
 
 # For the direct chromosome DNA chain:
 
-for i in range(1, 11):  # 10 iterations
-    match = open(r"5-dir.txt", "a+")  # 15 b matching fragments numbers
+for i in range(iterations):  # 10 iterations
+
+    for fragmentSize in fragmentSizes:
+        pass
+
+
+    match = open(r"5-dir.txt", "a+")  # 5 b matching fragments numbers
     match.write("Iteration ")
     match.write(str(i))
     match.write("\n")
