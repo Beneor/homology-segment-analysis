@@ -1,45 +1,46 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# Homolgy segment analysis
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+## Description
+This script produces a set of short (5 - 30 by default) random fragments for the specified chromosome segment,
+splits chromosome into a set of long (10 kb by default) chunks,
+seeks random segments within chromosome parts,
+computes frequencies of occurence for segments of different length within chromosome parts,
+makes table for the normalized frequencies,
+and calculates Pearson correlation between fragment frequencies for chromosome discs and ectopic contact frequencies
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
 
----
+## Installation
 
-## Edit a file
+Just checkout from maser branch code and run master script segmentanalysis.py
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+## Usage
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+### Default setings
+`segmentanalysis.py <options> chromosomeseq segment`
 
----
+The required parameters are
 
-## Create a file
+  `chromosomeseq` ---        TXT file containing chromosome sequence (one string,
+                        small letters, no name, no spaces)
+                        
+  `segment` ---              segment of chromosome to analyze (16113516:16900779)
+                        in BED-file notation (starting from 0, end is not
+                        included)
 
-Next, you’ll add a new file to this repository.
+### Optional arguments
 
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
+*  `-h, --help`  ---          show this help message and exit
+*  `-v, --verbose`  ---       Print additional information to stdout
+*  `-s, --fragmentsizes` ---
+                        Set of fragment sizes to search
+*  `-d, --fragmentdensity`  ---
+                        Average frequency of fragments in letters Default 25
+                        meand that in average each 25-th letter will be start
+                        of fragment
+*  `-c, --chunk`  ---
+                        Chunk size to divide chromosome
+*  `-i, --iterations`  ---
+                        Number of iterations for fragment splitting
 
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
-
----
-
-## Clone a repository
-
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
-
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
-
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+## Licence
+This program is licensed under GNU GPLv3 licence 
