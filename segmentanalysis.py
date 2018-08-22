@@ -29,10 +29,10 @@ parser.add_argument("-v", "--verbose", action='store_true',
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
                     help='Set of fragment sizes to search')
 parser.add_argument("-d", "--fragmentdensity", type=int, default=100,
-                    help='Average frequency of fragments in letters Default 25 meand that in average each 25-th letter will be start of fragment')
+                    help='Average frequency of fragments in letters. Default 25 means that in average each 25-th letter will be start of fragment')
 
 parser.add_argument("-c", "--chunk", type=int, default=10,
-                    help='Chunk size to divide chromosome')
+                    help='Chunk size to divide chromosome, in kilobases')
 parser.add_argument("-i", "--iterations", type=int, default=10,
                     help='Number of iterations for fragment splitting')
 args = parser.parse_args()
@@ -46,15 +46,13 @@ chunkLen = args.chunk * 1000
 
 # 1. Selection of chromosome segment 0 (to be fragmented)
 with open(args.chromosomeseq) as chrSeqFile:
-    chromosome = ''.join([line.strip() for line in chrSeqFile.readlines()]).lower()
+    chromosome = ''.join( [line.strip() for line in chrSeqFile.readlines() ]).lower()
     segment = chromosome[start:stop]
 
 # 2. Preparation of complementary segment
 segmentRevComp = revcomp(segment)
 
 # II. SEARCH OF MATCHING FRAGMENTS
-
-
 for iteration in range(args.iterations):  # iterations of segment splitting
     if args.verbose:
         print('Starting split iteration: ', iteration)
