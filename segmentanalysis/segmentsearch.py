@@ -1,11 +1,11 @@
 # This module contains all code ralated to search of small fragments in chromosome chunks
 import random
 import re
-
+import ahocorasick as aho_corasick # Fast and memory efficient library for exact or approximate multi-pattern string search
+from collections import defaultdict
 
 class fragmentInfo:
     count = 0
-
 
 def chooseFragments(segment, fragmentLength, fragmentDensity):
     """
@@ -24,20 +24,25 @@ def chooseFragments(segment, fragmentLength, fragmentDensity):
         fragments.append(fragment)
     return fragments
 
-
-def searchFragment(sequence, fragment):
-    fragmentRe = re.compile(fragment)
-    positions = [m.start() for m in fragmentRe.finditer(sequence)]
-    return positions
-
 def countFragments(sequence, fragments, verbose=False):
     nFragment = 0
-    counts = {}
-    nFragmentTotal = len(fragments)
-    for fragment in fragments:
-        fragmentCoordinates = searchFragment(sequence, fragment)
-        counts[fragment] = len(fragmentCoordinates)
-        nFragment += 1
-        if verbose and nFragment % 100 == 0:
-            print('Processed {}/{} fragments'.format(nFragment,nFragmentTotal))
+    counts = defaultdict(list)
+    if verbose:
+        print('Making Aho-Corasick automation for {} fragments'.format(len(fragments)))
+    A = aho_corasick.Automaton()
+    for idx, key in enumerate(fragments):
+        A.add_word(key, (idx, key))
+    A.make_automaton()
+    if verbose:
+        print('Starting Aho-Corasick search for {} fragments'.format(len(fragments)))
+    foundFragments = 0
+    for end_index, (insert_order, fragment) in A.iter(sequence):
+        position = end_index - len(fragment) + 1
+        counts[fragment].append(position) 
+        foundFragments +=1
+        if verbose and foundFragments % 100000 == 0:
+            print('Found {} fragments, search position: {}'.format(foundFragments,position))
+    if verbose:
+        print('Aho-Corasick search finished')
     return counts
+

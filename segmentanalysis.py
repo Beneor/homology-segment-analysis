@@ -15,7 +15,7 @@ from os.path import join, abspath, curdir
 
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
 from segmentanalysis.segmentutils import revcomp
-from segmentanalysis import segmentsearch
+from segmentanalysis import segmentsearch,segmentstatistics
 
 # 0. ANALYZING INPUT PARAMETERS
 
@@ -40,7 +40,7 @@ args = parser.parse_args()
 # Processign command-line arguments
 start, stop = [int(coord) for coord in args.segment.split(':')]
 fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
-chunkLen = args.chunk * 1000
+chunkSize = args.chunk * 1000
 
 # I. INPUT FILES PREPARATION
 
@@ -55,23 +55,30 @@ segmentRevComp = revcomp(segment)
 # II. SEARCH OF MATCHING FRAGMENTS
 for iteration in range(args.iterations):  # iterations of segment splitting
     if args.verbose:
-        print('Starting split iteration: ', iteration)
+        print('Starting split iteration: ', iteration+1)
+    fragments = []
+    if args.verbose:
+        print('Generating fragments for sizes: '+args.fragmentsizes)
     for fragmentSize in fragmentSizes:
-        if args.verbose:
-            print('Fragment size: ', fragmentSize)
+        
         # For the direct chromosome DNA chain:
-        fragmentsFor = segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
-        countsFor = segmentsearch.countFragments(chromosome, fragmentsFor, args.verbose)
-        # For the reverse chromosome DNA chain:
-        fragmentsRev = segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
-        countsRev = segmentsearch.countFragments(chromosome, fragmentsRev, args.verbose)
+        fragments += segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
+        fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
+    fragmentPositions = segmentsearch.countFragments(chromosome, fragments, args.verbose)
+    fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
+    chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
+    print(chunksDensity)
+    
+    
 
 exit(0)
 
 # III. OUTPUT FILES PREPARATION FOR ANALYSIS (SORTING)
+'''
 exec(open(
     "./Sorting scripts/Sorting-initial-fragments-dir.py").read())  # Sorts all random (matching and dismatching) fragments according to their positions in segment
 # (direct DNA chain). Input file:*-dir.all.txt, output file: *-dir-all.sort.txt
+
 exec(open("./Sorting scripts/Sorting-initial-fragments-rev.py").read())  # Does the same for reverse DNA chain
 exec(open(
     "./Sorting scripts/Sorting-matching-fragments-dir.py").read())  # Sorts matching fragments according to their positions in segment and chromosome (direct DNA chain)
@@ -81,7 +88,7 @@ exec(open(
     "./Sorting scripts/Sorting-chromosome-segments-dir.py").read())  # Sorts numbers of matching fragments according to chromosome segment numbers
 # and calculates average number normalized to the total fragments number (direct DNA chain)
 exec(open("./Sorting scripts/Sorting-chromosome-segments-rev.py").read())  # Does the same for reverse DNA chain
-
+'''
 # IV. ANALYSIS
 # Table with the normalized average numbers of matching segments
 exec(open(
