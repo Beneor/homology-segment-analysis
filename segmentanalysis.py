@@ -35,6 +35,12 @@ parser.add_argument("-c", "--chunk", type=int, default=10,
                     help='Chunk size to divide chromosome, in kilobases')
 parser.add_argument("-i", "--iterations", type=int, default=10,
                     help='Number of iterations for fragment splitting')
+
+parser.add_argument("--dump", action='store_true',
+                    help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
+parser.add_argument("--mindumpsize", type=int, default=10,
+                    help='Minumum size of fragment to store in file')
+
 args = parser.parse_args()
 
 # Processign command-line arguments
@@ -56,19 +62,24 @@ segmentRevComp = revcomp(segment)
 for iteration in range(args.iterations):  # iterations of segment splitting
     if args.verbose:
         print('Starting split iteration: ', iteration+1)
+    # Generating random fragments from selected region
     fragments = []
     if args.verbose:
         print('Generating fragments for sizes: '+args.fragmentsizes)
-    for fragmentSize in fragmentSizes:
-        
-        # For the direct chromosome DNA chain:
+    for fragmentSize in fragmentSizes: 
         fragments += segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
         fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
-    fragmentPositions = segmentsearch.countFragments(chromosome, fragments, args.verbose)
+    # Searching for fragments in chromosome 
+    fragmentPositions = segmentsearch.searchFragments(chromosome, fragments, args.verbose)
+    
+    # Converting found positions for nomalization
+    if args.verbose:
+        print('Converting found positions for normalization')
     fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
     chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
     print(chunksDensity)
-    
+
+# IV. ANALYSIS
     
 
 exit(0)
@@ -89,7 +100,7 @@ exec(open(
 # and calculates average number normalized to the total fragments number (direct DNA chain)
 exec(open("./Sorting scripts/Sorting-chromosome-segments-rev.py").read())  # Does the same for reverse DNA chain
 '''
-# IV. ANALYSIS
+
 # Table with the normalized average numbers of matching segments
 exec(open(
     "./Analysis scripts/Normalization-table-dir.py").read())  # Generates table of normalized fragment frequencies of each length for each chromosome segment (direct DNA strain)

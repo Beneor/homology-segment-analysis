@@ -1,11 +1,10 @@
-# This module contains all code ralated to search of small fragments in chromosome chunks
+# This module contains all code related to searching of small fragments in chromosome chunks
 import random
 import re
 import ahocorasick as aho_corasick # Fast and memory efficient library for exact or approximate multi-pattern string search
 from collections import defaultdict
 
-class fragmentInfo:
-    count = 0
+outputInfoChunkLength = 1000000 # Chromosome length chunk to print fragment finding statistics
 
 def chooseFragments(segment, fragmentLength, fragmentDensity):
     """
@@ -24,25 +23,33 @@ def chooseFragments(segment, fragmentLength, fragmentDensity):
         fragments.append(fragment)
     return fragments
 
-def countFragments(sequence, fragments, verbose=False):
-    nFragment = 0
-    counts = defaultdict(list)
+def searchFragments(sequence, fragments, verbose=False):
+    """
+    Finds multiple fragments in chromosome sequence
+    :param sequence: string sequence of chromosome
+    :param fragments: list of generated random fragments
+    :return: distionalr of found fragments positions:
+        - key: fragment sequence
+        - value: list of positions in chromosome
+    """
     if verbose:
         print('Making Aho-Corasick automation for {} fragments'.format(len(fragments)))
     A = aho_corasick.Automaton()
     for idx, key in enumerate(fragments):
         A.add_word(key, (idx, key))
     A.make_automaton()
+    
     if verbose:
         print('Starting Aho-Corasick search for {} fragments'.format(len(fragments)))
-    foundFragments = 0
+    fragmentsPositions = defaultdict(list)
+    currentInfoChunk = 0
     for end_index, (insert_order, fragment) in A.iter(sequence):
         position = end_index - len(fragment) + 1
-        counts[fragment].append(position) 
-        foundFragments +=1
-        if verbose and foundFragments % 100000 == 0:
-            print('Found {} fragments, search position: {}'.format(foundFragments,position))
+        fragmentsPositions[fragment].append(position) 
+        if verbose and (position//outputInfoChunkLength) > currentInfoChunk:
+            currentInfoChunk = position//outputInfoChunkLength
+            print('Processed {:8}/{:8} bases'.format(position,len(sequence)))
     if verbose:
         print('Aho-Corasick search finished')
-    return counts
-
+    return fragmentsPositions
+    
