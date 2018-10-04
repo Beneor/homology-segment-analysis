@@ -14,7 +14,7 @@ import sys
 from os.path import join, abspath, curdir
 
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
-from segmentanalysis.segmentutils import revcomp
+from segmentanalysis import segmentutils
 from segmentanalysis import segmentsearch,segmentstatistics
 
 # 0. ANALYZING INPUT PARAMETERS
@@ -56,7 +56,7 @@ with open(args.chromosomeseq) as chrSeqFile:
     segment = chromosome[start:stop]
 
 # 2. Preparation of complementary segment
-segmentRevComp = revcomp(segment)
+segmentRevComp = segmentutils.revcomp(segment)
 
 # II. SEARCH OF MATCHING FRAGMENTS
 for iteration in range(args.iterations):  # iterations of segment splitting
@@ -72,12 +72,20 @@ for iteration in range(args.iterations):  # iterations of segment splitting
     # Searching for fragments in chromosome 
     fragmentPositions = segmentsearch.searchFragments(chromosome, fragments, args.verbose)
     
+    if args.dump:
+        if args.verbose:
+            print('Dumping fragments to text file')
+        dumpFile = open(args.chromosomeseq+'.fragments.txt','w')
+        segmentutils.dumpFragmentsToFile(dumpFile, fragmentPositions) 
+        dumpFile.close()
+    
     # Converting found positions for nomalization
     if args.verbose:
         print('Converting found positions for normalization')
     fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
     chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
-    print(chunksDensity)
+    normalizedDensity = segmentstatistics.normalizeDensity(chunksDensity)
+    print(normalizedDensity)
 
 # IV. ANALYSIS
     
