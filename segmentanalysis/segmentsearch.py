@@ -1,8 +1,20 @@
 # This module contains all code related to searching of small fragments in chromosome chunks
 import random
 import re
-import ahocorasick as aho_corasick # Fast and memory efficient library for exact or approximate multi-pattern string search
 from collections import defaultdict
+
+try:
+    import ahocorasick as aho_corasick # Fast and memory efficient library for exact or approximate multi-pattern string search
+except ImportError as error:
+    # Output expected ImportErrors.
+    print(
+    '''Cannot import Aho-Corasick python module for fast fragment search
+    https://pypi.org/project/pyahocorasick/
+    
+    Try to install it by running "pip install pyahocorasick"
+    or refer to module documentation
+    For Windows Visual studio buildtools are required: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017''')
+    exit(0)
 
 outputInfoChunkLength = 1000000 # Chromosome length chunk to print fragment finding statistics
 
