@@ -9,8 +9,8 @@ makes table for the normalized frequencies,
 and calculates Pearson correlation between fragment frequencies for chromosome discs and ectopic contact frequencies
 '''
 import argparse
-import glob
 import sys
+import gzip
 from os.path import join, abspath, curdir
 
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
@@ -20,10 +20,10 @@ from segmentanalysis import segmentsearch,segmentstatistics
 # 0. ANALYZING INPUT PARAMETERS
 
 parser = argparse.ArgumentParser(description=programDescription, formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument("chromosomeseq", type=str,
-                    help="TXT file containing chromosome sequence (one string, small letters, no name, no spaces)")
+parser.add_argument("fastaFileName", type=str,
+                    help="FASTA file (may be gzipped) containing genome sequence")
 parser.add_argument("segment", type=str,
-                    help="segment of chromosome to analyze (16113516:16900779) in BED-file notation (starting from 0, end is not included)")
+                    help="segment of chromosome to analyze (X:16113516:16900779) in BED-file notation (starting from 0, end is not included)")
 parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
@@ -36,61 +36,80 @@ parser.add_argument("-c", "--chunk", type=int, default=10,
 parser.add_argument("-i", "--iterations", type=int, default=10,
                     help='Number of iterations for fragment splitting')
 
-parser.add_argument("--dump", action='store_true',
+parser.add_argument("--dump", action='store_true',default=True,
                     help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
 parser.add_argument("--mindumpsize", type=int, default=10,
                     help='Minumum size of fragment to store in file')
 
 args = parser.parse_args()
 
-# Processign command-line arguments
-start, stop = [int(coord) for coord in args.segment.split(':')]
+# I. INPUT FILES PREPARATION
+
+# 0. Reading genome sequence from FASTA[.gz] file
+if args.fastaFileName.endswith('.gz'):
+    fastaFile = gzip.open(args.fastaFileName, 'rt')
+else:
+    fastaFile = open(args.fastaFileName,'r')
+
+if args.verbose:
+    print('Loading genome from FASTA file')
+genome = segmentutils.readFasta(fastaFile)
+fastaFile.close()
+
+# 1. Selection of chromosome segment 0 (to be fragmented
+chromosome = args.segment.split(':')[0]
+start, stop = [int(coord) for coord in args.segment.split(':')[1:]]
+if not chromosome in genome.keys():
+    print("Unknown chromosome id for loaded genome: {}".format(chromosome))
+    print("Valid chromosomes are: "+','.join(genome.keys()))
+    exit(-1)
+if (start >= stop) or (stop > len(genome[chromosome])):
+    print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
+        start,stop,chromosome, len(genome[chromosome])))
+    exit(-2)
+segment = genome[chromosome][start:stop]
+segmentRevComp = segmentutils.revcomp(segment)
+
+# 2. Size of chunks and selected fragments
 fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
 chunkSize = args.chunk * 1000
 
-# I. INPUT FILES PREPARATION
-
-# 1. Selection of chromosome segment 0 (to be fragmented)
-with open(args.chromosomeseq) as chrSeqFile:
-    chromosome = ''.join( [line.strip() for line in chrSeqFile.readlines() ]).lower()
-    segment = chromosome[start:stop]
-
-# 2. Preparation of complementary segment
-segmentRevComp = segmentutils.revcomp(segment)
-
 # II. SEARCH OF MATCHING FRAGMENTS
-for iteration in range(args.iterations):  # iterations of segment splitting
+
+# Generating random fragments from selected region
+fragments = []
+for fragmentSize in fragmentSizes:
+    # This is main cycle since all sizes handled individually
     if args.verbose:
-        print('Starting split iteration: ', iteration+1)
-    # Generating random fragments from selected region
-    fragments = []
-    if args.verbose:
-        print('Generating fragments for sizes: '+args.fragmentsizes)
-    for fragmentSize in fragmentSizes: 
-        fragments += segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
-        fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
-    # Searching for fragments in chromosome 
-    fragmentPositions = segmentsearch.searchFragments(chromosome, fragments, args.verbose)
+        print('Generating fragments for size: {}'.format(fragmentSize))
+    fragments += segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
+    fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
     
-    if args.dump:
+    # Searching for fragments in chromosome 
+    fragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
+    
+    #Dumping fragments
+    if args.dump and fragmentSize >= args.mindumpsize:
         if args.verbose:
             print('Dumping fragments to text file')
-        dumpFile = open(args.chromosomeseq+'.fragments.txt','w')
-        segmentutils.dumpFragmentsToFile(dumpFile, fragmentPositions) 
+        dumpFile = open('{}.fragments.l{:02d}.txt'.format(args.fastaFileName,fragmentSize),'w')
+        segmentutils.dumpFragmentsToFile(dumpFile, fragmentsPositions) 
         dumpFile.close()
-    
-    # Converting found positions for nomalization
-    if args.verbose:
-        print('Converting found positions for normalization')
-    fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
-    chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
-    normalizedDensity = segmentstatistics.normalizeDensity(chunksDensity)
-    print(normalizedDensity)
+
+exit(0)
+
+# Converting found positions for nomalization
+if args.verbose:
+    print('Converting found positions for normalization')
+fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
+chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
+normalizedDensity = segmentstatistics.normalizeDensity(chunksDensity)
+print(normalizedDensity)
 
 # IV. ANALYSIS
     
 
-exit(0)
+
 
 # III. OUTPUT FILES PREPARATION FOR ANALYSIS (SORTING)
 '''

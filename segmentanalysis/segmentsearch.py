@@ -23,14 +23,16 @@ def chooseFragments(segment, fragmentLength, fragmentDensity):
         fragments.append(fragment)
     return fragments
 
-def searchFragments(sequence, fragments, verbose=False):
+def searchFragments(genome, fragments, verbose=False):
     """
     Finds multiple fragments in chromosome sequence
-    :param sequence: string sequence of chromosome
-    :param fragments: list of generated random fragments
-    :return: distionalr of found fragments positions:
-        - key: fragment sequence
-        - value: list of positions in chromosome
+    :param genome: dictionaly of strings -- {chromosomeID:chromosomeSequence}
+    :param fragments: list of fragments to search
+    :return: dictionary of found fragments positions:
+        - key: chromosome ID
+        - value: dictionary:
+            - key: fragment sequence 
+            - value: list of positions in chromosome
     """
     if verbose:
         print('Making Aho-Corasick automation for {} fragments'.format(len(fragments)))
@@ -41,14 +43,19 @@ def searchFragments(sequence, fragments, verbose=False):
     
     if verbose:
         print('Starting Aho-Corasick search for {} fragments'.format(len(fragments)))
-    fragmentsPositions = defaultdict(list)
-    currentInfoChunk = 0
-    for end_index, (insert_order, fragment) in A.iter(sequence):
-        position = end_index - len(fragment) + 1
-        fragmentsPositions[fragment].append(position) 
-        if verbose and (position//outputInfoChunkLength) > currentInfoChunk:
-            currentInfoChunk = position//outputInfoChunkLength
-            print('Processed {:8}/{:8} bases'.format(position,len(sequence)))
+    fragmentsPositions = {}
+    
+    for chrId,sequence in genome.items(): 
+        fragmentsPositions[chrId] = defaultdict(list)
+        if verbose:
+            print('Processing chromosome '+chrId)
+            currentInfoChunk = 0
+        for end_index, (insert_order, fragment) in A.iter(sequence):
+            position = end_index - len(fragment) + 1
+            fragmentsPositions[chrId][fragment].append(position) 
+            if verbose and (position//outputInfoChunkLength) > currentInfoChunk:
+                currentInfoChunk = position//outputInfoChunkLength
+                print('Processed chromosome {}, {:8}/{:8} bases'.format(chrId, position,len(sequence)))
     if verbose:
         print('Aho-Corasick search finished')
     return fragmentsPositions
