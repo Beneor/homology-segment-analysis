@@ -86,7 +86,7 @@ for fragmentSize in fragmentSizes:
     fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
     
     # Searching for fragments in chromosome 
-    fragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
+    chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
     
     #Dumping fragments
     if args.dump and fragmentSize >= args.mindumpsize:

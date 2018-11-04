@@ -55,20 +55,20 @@ def searchFragments(genome, fragments, verbose=False):
     
     if verbose:
         print('Starting Aho-Corasick search for {} fragments'.format(len(fragments)))
-    fragmentsPositions = {}
+    chrFragmentsPositions = {}
     
     for chrId,sequence in genome.items(): 
-        fragmentsPositions[chrId] = defaultdict(list)
+        chrFragmentsPositions[chrId] = defaultdict(list)
         if verbose:
             print('Processing chromosome '+chrId)
             currentInfoChunk = 0
         for end_index, (insert_order, fragment) in A.iter(sequence):
             position = end_index - len(fragment) + 1
-            fragmentsPositions[chrId][fragment].append(position) 
+            chrFragmentsPositions[chrId][fragment].append(position) 
             if verbose and (position//outputInfoChunkLength) > currentInfoChunk:
                 currentInfoChunk = position//outputInfoChunkLength
                 print('Processed chromosome {}, {:8}/{:8} bases'.format(chrId, position,len(sequence)))
     if verbose:
         print('Aho-Corasick search finished')
-    return fragmentsPositions
+    return chrFragmentsPositions
     
