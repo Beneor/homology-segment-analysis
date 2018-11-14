@@ -28,7 +28,7 @@ parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
                     help='Set of fragment sizes to search')
-parser.add_argument("-d", "--fragmentdensity", type=int, default=100,
+parser.add_argument("-d", "--fragmentdensity", type=int, default=25,
                     help='Average frequency of fragments in letters. Default 25 means that in average each 25-th letter will be start of fragment')
 
 parser.add_argument("-c", "--chunk", type=int, default=10,
@@ -57,17 +57,17 @@ genome = segmentutils.readFasta(fastaFile)
 fastaFile.close()
 
 # 1. Selection of chromosome segment 0 (to be fragmented
-chromosome = args.segment.split(':')[0]
-start, stop = [int(coord) for coord in args.segment.split(':')[1:]]
-if not chromosome in genome.keys():
+segmentChromosome = args.segment.split(':')[0]
+segmentStart, segmentStop = [int(coord) for coord in args.segment.split(':')[1:]]
+if not segmentChromosome in genome.keys():
     print("Unknown chromosome id for loaded genome: {}".format(chromosome))
     print("Valid chromosomes are: "+','.join(genome.keys()))
     exit(-1)
-if (start >= stop) or (stop > len(genome[chromosome])):
+if (segmentStart >= segmentStop) or (segmentStop > len(genome[segmentChromosome])):
     print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
-        start,stop,chromosome, len(genome[chromosome])))
+        segmentStart,segmentStop,segmentChromosome, len(genome[segmentChromosome])))
     exit(-2)
-segment = genome[chromosome][start:stop]
+segment = genome[segmentChromosome][segmentStart:segmentStop]
 segmentRevComp = segmentutils.revcomp(segment)
 
 # 2. Size of chunks and selected fragments
@@ -77,31 +77,45 @@ chunkSize = args.chunk * 1000
 # II. SEARCH OF MATCHING FRAGMENTS
 
 # Generating random fragments from selected region
-fragments = []
 for fragmentSize in fragmentSizes:
     # This is main cycle since all sizes handled individually
     if args.verbose:
         print('Generating fragments for size: {}'.format(fragmentSize))
-    fragments += segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
-    fragments += segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
+    forFragments = segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
+    revFragments = segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
     
     # Searching for fragments in chromosome 
-    chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
+    chrFragmentsPositionsFor = segmentsearch.searchFragments(genome, forFragments, args.verbose)
+    chrFragmentsPositionsRev = segmentsearch.searchFragments(genome, revFragments, args.verbose)
     
     #Dumping fragments
     if args.dump and fragmentSize >= args.mindumpsize:
         if args.verbose:
             print('Dumping fragments to text file')
-        dumpFile = open('{}.fragments.l{:02d}.txt'.format(args.fastaFileName,fragmentSize),'w')
-        segmentutils.dumpFragmentsToFile(dumpFile, fragmentsPositions) 
+        dumpFile = open('{}.fragments.l{:02d}-for.txt'.format(args.fastaFileName,fragmentSize),'w')
+        segmentutils.dumpFragmentsToFile(dumpFile, chrFragmentsPositionsFor) 
         dumpFile.close()
-
-exit(0)
+        dumpFile = open('{}.fragments.l{:02d}-rev.txt'.format(args.fastaFileName,fragmentSize),'w')
+        segmentutils.dumpFragmentsToFile(dumpFile, chrFragmentsPositionsRev) 
+        dumpFile.close()
+    if args.verbose:
+        print('Normalising matches')
+    chrPositionsChunksFor = segmentstatistics.locationsToChunks(chrFragmentsPositionsFor, chunkSize)
+    chrPositionsChunksRev = segmentstatistics.locationsToChunks(chrFragmentsPositionsRev, chunkSize)
+    
+    # Removent counts inside fragment
+    for chunk in range(segmentStart//chunkSize, segmentStop//chunkSize):
+        print("resetting for chunk ", chunk)
+        chrPositionsChunksFor[segmentChromosome][chunk] = 0
+        chrPositionsChunksRev[segmentChromosome][chunk] = 0
+    print(chrPositionsChunksFor[segmentChromosome])
+    
+    nFragmentsFor = segmentstatistics.normalizeCounts(chrPositionsChunksFor, genome, chunkSize)
+    print (nFragmentsFor)
+    #nragmentsRev  = 
+    exit(0)
 
 # Converting found positions for nomalization
-if args.verbose:
-    print('Converting found positions for normalization')
-fragmentsPositionsChunks = segmentstatistics.locationsToChunks(fragmentPositions, chunkSize)
 chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
 normalizedDensity = segmentstatistics.normalizeDensity(chunksDensity)
 print(normalizedDensity)
@@ -112,30 +126,4 @@ print(normalizedDensity)
 
 
 # III. OUTPUT FILES PREPARATION FOR ANALYSIS (SORTING)
-'''
-exec(open(
-    "./Sorting scripts/Sorting-initial-fragments-dir.py").read())  # Sorts all random (matching and dismatching) fragments according to their positions in segment
-# (direct DNA chain). Input file:*-dir.all.txt, output file: *-dir-all.sort.txt
 
-exec(open("./Sorting scripts/Sorting-initial-fragments-rev.py").read())  # Does the same for reverse DNA chain
-exec(open(
-    "./Sorting scripts/Sorting-matching-fragments-dir.py").read())  # Sorts matching fragments according to their positions in segment and chromosome (direct DNA chain)
-# Input file: *-d.txt, output file: *-d-list.txt *-d-count.txt
-exec(open("./Sorting scripts/Sorting-matching-fragments-rev.py").read())  # Does the same for reverse DNA chain
-exec(open(
-    "./Sorting scripts/Sorting-chromosome-segments-dir.py").read())  # Sorts numbers of matching fragments according to chromosome segment numbers
-# and calculates average number normalized to the total fragments number (direct DNA chain)
-exec(open("./Sorting scripts/Sorting-chromosome-segments-rev.py").read())  # Does the same for reverse DNA chain
-'''
-
-# Table with the normalized average numbers of matching segments
-exec(open(
-    "./Analysis scripts/Normalization-table-dir.py").read())  # Generates table of normalized fragment frequencies of each length for each chromosome segment (direct DNA strain)
-exec(open("./Analysis scripts/Normalization-table-rev.py").read())  # Does the same for reverse DNA chain
-exec(open(
-    "./Analysis scripts/Normalization-column-dir.py").read())  # Generates normalized fragment frequencies for each chromosomal disc and calculates Pearson correlation between fragment frequencies and ectopic contacts frequencies (direct DNA strain)
-exec(open("./Analysis scripts/Normalization-column-rev.py").read())  # Does the same for reverse DNA chain
-exec(open(
-    "./Analysis scripts/Column-combinations.py").read())  # Combines columns with ectopic contacts and fragment frequencies for both DNA chains
-exec(open(
-    "./Analysis scripts/Normalization-column-both.py").read())  # Calculates Pearson correlation between fragment frequencies and ectopic contacts frequencies (both DNA strain)

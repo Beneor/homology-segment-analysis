@@ -1,27 +1,47 @@
-from collections import defaultdict,OrderedDict
+import itertools
+from collections import Counter
+import numpy as np
 
-def locationsToChunks(fragmentPositions, chunkSize):
+#from collections import defaultdict,OrderedDict
+
+def locationsToChunks(chrFragmentsPositions, chunkSize):
     """
-    Converts exact positions of found matches to chunk numbers
-    :param fragmentPositions: exact positions of fragments
+    Converts exact positions of found matches in each chromosome to chunk numbers
+    :param fragmentPositions: dictionary from segmentsearch.searchFragments()
     :param chunkSize: length of chunk
     :return: dictionaly:
-       - key: fragment sequence
+       - key: chromosome ID
        - value: list of cunk numbers - one number for each match
     """
-    return {fragment : [position // chunkSize for position in positions] 
-                for fragment,positions in fragmentPositions.items()} 
+    chrPositionsChunks={}
+    for chromosome, fragmentPositions in chrFragmentsPositions.items():
+        # Wiping information about fragment sequences and joining all positions together
+        positions = np.fromiter(itertools.chain(*fragmentPositions.values()),dtype=np.int64)
+        chrPositionsChunks[chromosome] = positions//chunkSize
+    return chrPositionsChunks 
 
-def normalizeCounts(fragmentsPositionsChunks):
+def normalizeCounts(chrPositionsChunks, genome, chunkSize):
     """
     Normalizes counts 
-    :param fragmentsPositionsChunks: positions of matchesfragments
-    :param chunkSize: length of chunk
+    :param chrPositionsChunksFor: positions of matchesfragments for each chromosome
     :return: dictionaly:
-       - key: fragment sequence
-       - value: list of cunk numbers - one number for each match
+       - key: chromosome
+       - value: list of count for each chunk
     """
-    pass
+    nFragments = {}
+    for chromosome, chunkPositions in chrPositionsChunks.items():
+        ncounts = np.bincount(chunkPositions) # Counting ocuurence of each cunk nomber and storing it into new list
+        nChunks = len(genome[chromosome])/chunkSize
+        print(chromosome)
+        print(ncounts)
+        print("sum of counts", np.sum(ncounts))
+        print("chunks: ",nChunks)
+        averageCouns = np.sum(ncounts) / nChunks
+        print("average counts for each chunk: ", averageCouns)
+        nFragments[chromosome] = ncounts/averageCouns
+        
+    return nFragments
+
     
 def countDensity(fragmentsPositionsChunks):
     '''
