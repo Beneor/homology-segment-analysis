@@ -1,71 +1,57 @@
 import itertools
-from collections import Counter
 import numpy as np
-
-#from collections import defaultdict,OrderedDict
 
 def locationsToChunks(chrFragmentsPositions, chunkSize):
     """
     Converts exact positions of found matches in each chromosome to chunk numbers
     :param fragmentPositions: dictionary from segmentsearch.searchFragments()
     :param chunkSize: length of chunk
-    :return: dictionaly:
+    :return: dictionary:
        - key: chromosome ID
        - value: list of cunk numbers - one number for each match
     """
     chrPositionsChunks={}
     for chromosome, fragmentPositions in chrFragmentsPositions.items():
         # Wiping information about fragment sequences and joining all positions together
+        # Also converting to faster numpy array
         positions = np.fromiter(itertools.chain(*fragmentPositions.values()),dtype=np.int64)
-        chrPositionsChunks[chromosome] = positions//chunkSize
+        chrPositionsChunks[chromosome] = positions // chunkSize # Dividing each element by chunk size using numpy syntax
     return chrPositionsChunks 
 
-def normalizeCounts(chrPositionsChunks, genome, chunkSize):
+def chunksToCounts(chrPositionsChunks, genome, chunkSize):
     """
-    Normalizes counts 
-    :param chrPositionsChunksFor: positions of matchesfragments for each chromosome
-    :return: dictionaly:
+    Counts how many matches there are in each chunk
+    :param chrPositionsChunks: positions of matches fragments for each chromosome
+    :param genome: dictionary of chromosomes and genome sequences
+    :param chunkSize: size of one chunk in bases
+    :return: dictionary:
        - key: chromosome
-       - value: list of count for each chunk
+       - value: list of counts for each chunk
     """
-    nFragments = {}
+    counts = {}
     for chromosome, chunkPositions in chrPositionsChunks.items():
-        ncounts = np.bincount(chunkPositions) # Counting ocuurence of each cunk nomber and storing it into new list
-        nChunks = len(genome[chromosome])/chunkSize
-        print(chromosome)
-        print(ncounts)
-        print("sum of counts", np.sum(ncounts))
-        print("chunks: ",nChunks)
-        averageCouns = np.sum(ncounts) / nChunks
-        print("average counts for each chunk: ", averageCouns)
-        nFragments[chromosome] = ncounts/averageCouns
-        
-    return nFragments
+        counts[chromosome] = np.bincount(chunkPositions) # Counting occurence of each chunk number and storing it into new list
+        nChunks = len(genome[chromosome]) // chunkSize + 1
+        if nChunks > len(counts[chromosome]):  # Extending length to cover whole chromosome (need if we have no matches in latest chunks)
+            counts[chromosome].resize(nChunks)
+    return counts
 
-    
-def countDensity(fragmentsPositionsChunks):
-    '''
-    "Inverses" counts dict - counts for each chunk density of fragments
-    Result of this fucntion is following:
-     dict:
-         key: is a chunk number
-         value: dict:
-             key: fragment length
-             value: fragments count
-    '''
-    chunksDensity= {}
-    for fragment,chunks in fragmentsPositionsChunks.items():
-        for chunk in chunks:
-            if not chunk in chunksDensity.keys():
-                chunksDensity[chunk]=defaultdict(int)
-            chunksDensity[chunk][len(fragment)]+=1
-    
-    return OrderedDict(sorted(chunksDensity.items()))
+def normalizeCounts(counts):
+    """
+    Normalizes counts by mean count value
+    :param counts: dictionary:
+       - key: chromosome
+       - value: list of counts for each chunk
+    :return: dictionary:
+       - key: chromosome
+       - value: list of normalized counts for each chunk
+    """
+    nCounts = {}
+    for chromosome, countsList in counts.items():
+        sumCounts = np.sum(countsList)
+        nChunks = len(countsList)
+        averageCounts = sumCounts / nChunks
+        nCounts[chromosome] = countsList/averageCounts if averageCounts > 0 else np.zeros(nChunks)
+    return nCounts
 
-def normalizeDensity(chunksDensity):
-    '''
-    '''
-    for chunk,fragmentsCount in chunksDensity.items():
-        pass
-         
-    
+

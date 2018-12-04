@@ -56,19 +56,11 @@ if args.verbose:
 genome = segmentutils.readFasta(fastaFile)
 fastaFile.close()
 
-# 1. Selection of chromosome segment 0 (to be fragmented
-segmentChromosome = args.segment.split(':')[0]
-segmentStart, segmentStop = [int(coord) for coord in args.segment.split(':')[1:]]
-if not segmentChromosome in genome.keys():
-    print("Unknown chromosome id for loaded genome: {}".format(chromosome))
-    print("Valid chromosomes are: "+','.join(genome.keys()))
-    exit(-1)
-if (segmentStart >= segmentStop) or (segmentStop > len(genome[segmentChromosome])):
-    print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
-        segmentStart,segmentStop,segmentChromosome, len(genome[segmentChromosome])))
-    exit(-2)
-segment = genome[segmentChromosome][segmentStart:segmentStop]
-segmentRevComp = segmentutils.revcomp(segment)
+# 1. Selection of chromosome segment
+segment = segmentutils.GenomeInterval(args.segment, genome)
+
+segmentSeqFor = genome[segment.chromosome][segment.start:segment.stop]
+segmentSeqs = {'dir':segmentSeqFor, 'rev':segmentutils.revcomp(segmentSeqFor)}
 
 # 2. Size of chunks and selected fragments
 fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
@@ -77,53 +69,38 @@ chunkSize = args.chunk * 1000
 # II. SEARCH OF MATCHING FRAGMENTS
 
 # Generating random fragments from selected region
-for fragmentSize in fragmentSizes:
-    # This is main cycle since all sizes handled individually
-    if args.verbose:
-        print('Generating fragments for size: {}'.format(fragmentSize))
-    forFragments = segmentsearch.chooseFragments(segment, fragmentSize, args.fragmentdensity)
-    revFragments = segmentsearch.chooseFragments(segmentRevComp, fragmentSize, args.fragmentdensity)
-    
-    # Searching for fragments in chromosome 
-    chrFragmentsPositionsFor = segmentsearch.searchFragments(genome, forFragments, args.verbose)
-    chrFragmentsPositionsRev = segmentsearch.searchFragments(genome, revFragments, args.verbose)
-    
-    #Dumping fragments
-    if args.dump and fragmentSize >= args.mindumpsize:
+for direction,segmentSeq in segmentSeqs.items():
+    for fragmentSize in fragmentSizes:
+        # This is main cycle since all sizes handled individually
         if args.verbose:
-            print('Dumping fragments to text file')
-        dumpFile = open('{}.fragments.l{:02d}-for.txt'.format(args.fastaFileName,fragmentSize),'w')
-        segmentutils.dumpFragmentsToFile(dumpFile, chrFragmentsPositionsFor) 
-        dumpFile.close()
-        dumpFile = open('{}.fragments.l{:02d}-rev.txt'.format(args.fastaFileName,fragmentSize),'w')
-        segmentutils.dumpFragmentsToFile(dumpFile, chrFragmentsPositionsRev) 
-        dumpFile.close()
-    if args.verbose:
-        print('Normalising matches')
-    chrPositionsChunksFor = segmentstatistics.locationsToChunks(chrFragmentsPositionsFor, chunkSize)
-    chrPositionsChunksRev = segmentstatistics.locationsToChunks(chrFragmentsPositionsRev, chunkSize)
-    
-    # Removent counts inside fragment
-    for chunk in range(segmentStart//chunkSize, segmentStop//chunkSize):
-        print("resetting for chunk ", chunk)
-        chrPositionsChunksFor[segmentChromosome][chunk] = 0
-        chrPositionsChunksRev[segmentChromosome][chunk] = 0
-    print(chrPositionsChunksFor[segmentChromosome])
-    
-    nFragmentsFor = segmentstatistics.normalizeCounts(chrPositionsChunksFor, genome, chunkSize)
-    print (nFragmentsFor)
-    #nragmentsRev  = 
-    exit(0)
+            print('Generating fragments in {} direction for size: {}'.format(direction, fragmentSize))
+        fragments = segmentsearch.chooseFragments(segmentSeq, fragmentSize, args.fragmentdensity)
 
-# Converting found positions for nomalization
-chunksDensity = segmentstatistics.countDensity(fragmentsPositionsChunks)
-normalizedDensity = segmentstatistics.normalizeDensity(chunksDensity)
-print(normalizedDensity)
+        # Searching for fragments in chromosome
+        chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
+        if args.dump and fragmentSize >= args.mindumpsize:
+            if args.verbose:
+                print('Dumping fragments to text file')
+            fragmentsFileName = '{}.fragments.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+            segmentutils.dumpFragmentsToFile(fragmentsFileName, chrFragmentsPositions)
+
+        chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
+        counts = segmentstatistics.chunksToCounts(chrPositionsChunks, genome, chunkSize)
+        # Removing counts inside fragment
+        if args.verbose:
+            print('Setting to zero counts for chunks',segment.chromosome,
+                  ':' ,segment.start // chunkSize,'-',segment.stop // chunkSize)
+        for chunk in range(segment.start // chunkSize, segment.stop // chunkSize):
+            counts[segment.chromosome][chunk] = 0
+        # Normalizing counts
+        if args.verbose:
+            print('Normalising matches')
+        normalizedCounts = segmentstatistics.normalizeCounts(counts)
+        if args.dump:
+            if args.verbose:
+                print('Dumping normalized counts')
+            countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts)
 
 # IV. ANALYSIS
     
-
-
-
-# III. OUTPUT FILES PREPARATION FOR ANALYSIS (SORTING)
-
