@@ -24,17 +24,16 @@ parser.add_argument("fastaFileName", type=str,
                     help="FASTA file (may be gzipped) containing genome sequence")
 parser.add_argument("segment", type=str,
                     help="segment of chromosome to analyze (X:16113516:16900779) in BED-file notation (starting from 0, end is not included)")
+
 parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
                     help='Set of fragment sizes to search')
-parser.add_argument("-d", "--fragmentdensity", type=int, default=25,
+parser.add_argument("-d", "--fragmentdensity", type=int, default=10,
                     help='Average frequency of fragments in letters. Default 25 means that in average each 25-th letter will be start of fragment')
 
 parser.add_argument("-c", "--chunk", type=int, default=10,
                     help='Chunk size to divide chromosome, in kilobases')
-parser.add_argument("-i", "--iterations", type=int, default=10,
-                    help='Number of iterations for fragment splitting')
 
 parser.add_argument("--dump", action='store_true',default=True,
                     help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
@@ -57,7 +56,7 @@ genome = segmentutils.readFasta(fastaFile)
 fastaFile.close()
 
 # 1. Selection of chromosome segment
-segment = segmentutils.GenomeInterval(args.segment, genome)
+segment = segmentutils.segmentStrToGGenomeInterval(args.segment, genome)
 
 segmentSeqFor = genome[segment.chromosome][segment.start:segment.stop]
 segmentSeqs = {'dir':segmentSeqFor, 'rev':segmentutils.revcomp(segmentSeqFor)}
@@ -100,7 +99,11 @@ for direction,segmentSeq in segmentSeqs.items():
             if args.verbose:
                 print('Dumping normalized counts')
             countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
-            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts)
+            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts, chunkSize)
+
+        # Group chunks by chromosome regions
+        
+        #Pearson correlation
 
 # IV. ANALYSIS
     

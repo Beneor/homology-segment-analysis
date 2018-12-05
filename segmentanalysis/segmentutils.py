@@ -6,19 +6,25 @@ class GenomeInterval:
     '''
     This class represents information about one genome interval in BED notation: chromosome, start and stop
     '''
-    def __init__(self, segmentStr, genome=None):
-        self.chromosome = segmentStr.split(':')[0]
-        self.start, self.stop  = [int(coord) for coord in segmentStr.split(':')[1:]]
-        if genome is not None:
-            if not self.chromosome in genome.keys():
-                print("Unknown chromosome id for loaded genome: {}".format(chromosome))
-                print("Valid chromosomes are: " + ','.join(genome.keys()))
-                exit(-1)
-            if (self.start >= self.stop) or (self.stop > len(genome[self.chromosome])):
-                print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
-                    self.start, self.stop, self.chromosome, len(genome[self.chromosome])))
-                exit(-2)
+    def __init__(self, chromosome, start, stop):
+        self.chromosome = chromosome
+        self.start = start
+        self.stop = stop
+        
 
+def segmentStrToGGenomeInterval(segmentStr, genome=None):
+    chromosome = segmentStr.split(':')[0]
+    start, stop  = [int(coord) for coord in segmentStr.split(':')[1:]]
+    if genome is not None:
+        if not chromosome in genome.keys():
+            print("Unknown chromosome id for loaded genome: {}".format(chromosome))
+            print("Valid chromosomes are: " + ','.join(genome.keys()))
+            exit(-1)
+        if (start >= stop) or (stop > len(genome[chromosome])):
+            print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
+                start, stop, chromosome, len(genome[chromosome])))
+            exit(-2)
+    return GenomeInterval(chromosome, start,stop)
 
 def complement(sequence):
     """
@@ -72,10 +78,11 @@ def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
             fragmentsFile.write(fragmentString)
     fragmentsFile.close()
 
-def dumpCountsToFile(countsFileName, nCounts):
+def dumpCountsToFile(countsFileName, nCounts, chunkSize):
     countsFile = open(countsFileName, 'w')
     for chromosome in nCounts.keys():
         for chunk,nCount in enumerate(nCounts[chromosome]):
-            countString = '{}\t{:15}\t {:10.5f}\n'.format(chromosome, chunk, nCount)
+            start,stop = chunk*chunkSize, (chunk+1)*chunkSize - 1
+            countString = '{}\t{}\t{}\t{:10.5f}\n'.format(chromosome, start,stop, nCount)
             countsFile.write(countString)
     countsFile.close()
