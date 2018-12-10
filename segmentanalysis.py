@@ -112,7 +112,7 @@ for fragmentSize in fragmentSizes:
     if args.cytomap is not None:
         if args.verbose:
             print('Grouping counts by cytomap regions')
-        cytomap = segmentutils.readCytomap(args.cytomap)
+        cytomap = segmentutils.readBedFile(args.cytomap)
         cytomapCounts = {}
         for direction, nCounts in normalizedCounts.items():
             cytomapCounts[direction] = segmentstatistics.chunksToCytomap(cytomap, nCounts, chunkSize)

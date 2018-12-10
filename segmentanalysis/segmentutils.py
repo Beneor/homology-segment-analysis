@@ -9,11 +9,12 @@ class GenomeInterval:
     chromosome, start, stop and optional text ID
     """
 
-    def __init__(self, chromosome, start, stop, ID=''):
+    def __init__(self, chromosome, start, stop, ID=None, value = None):
         self.chromosome = chromosome
         self.start = start
         self.stop = stop
         self.ID = ID
+        self.value = value
 
 
 def strToBed(line, separator='\t'):
@@ -26,11 +27,12 @@ def strToBed(line, separator='\t'):
     fields = line.strip().split(separator)
     chromosome = fields[0]
     start, stop = [int(coord) for coord in fields[1:3]]
-    intervalID = fields[3] if len(fields) > 3 else ''
-    return GenomeInterval(chromosome, start, stop, intervalID)
+    intervalID = fields[3] if len(fields) > 3 else None
+    value = fields[4] if len(fields) > 4 else None
+    return GenomeInterval(chromosome, start, stop, intervalID, value)
 
 
-def segmentStrToGGenomeInterval(segmentStr, genome=None):
+def segmentStrToGGenomeInterval(segmentStr, genome):
     interval = strToBed(segmentStr, separator=':')
     if genome is not None:
         if not interval.chromosome in genome.keys():
@@ -117,19 +119,18 @@ def dumpCountsToFile(countsFileName, nCounts, chunkSize):
     countsFile.close()
 
 
-def readCytomap(cytomapFileName):
+def readBedFile(BedFileName):
     """
-    Reads Cytomap file in BED notation
-    :param cytomapFileName: name of
+    Reads Information from file in BED notation. only 5 BED columns are supported
+    :param BedFileName: name of
     :return: cytomap - list of GenomeInterval objects
     """
-    cytomapFile = open(cytomapFileName)
-    cytomap = []
-    for line in cytomapFile:
+    bedFile = open(BedFileName)
+    genomeFeatures = []
+    for line in bedFile:
         interval = strToBed(line)
-        cytomap.append(interval)
-    return cytomap
-
+        genomeFeatures.append(interval)
+    return genomeFeatures
 
 def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
     """
