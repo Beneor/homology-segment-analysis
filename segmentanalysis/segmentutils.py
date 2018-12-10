@@ -2,29 +2,47 @@
 
 import re
 
+
 class GenomeInterval:
-    '''
-    This class represents information about one genome interval in BED notation: chromosome, start and stop
-    '''
-    def __init__(self, chromosome, start, stop):
+    """
+    This class represents information about one genome interval in BED notation:
+    chromosome, start, stop and optional text ID
+    """
+
+    def __init__(self, chromosome, start, stop, ID=''):
         self.chromosome = chromosome
         self.start = start
         self.stop = stop
-        
+        self.ID = ID
+
+
+def strToBed(line, separator='\t'):
+    """
+    Converts text line to BED interval
+    :param line: string containing bed interval
+    :param separator: separator used to split values in line
+    :return: GenomeInterval instance containing readed interval
+    """
+    fields = line.strip().split(separator)
+    chromosome = fields[0]
+    start, stop = [int(coord) for coord in fields[1:3]]
+    intervalID = fields[3] if len(fields) > 3 else ''
+    return GenomeInterval(chromosome, start, stop, intervalID)
+
 
 def segmentStrToGGenomeInterval(segmentStr, genome=None):
-    chromosome = segmentStr.split(':')[0]
-    start, stop  = [int(coord) for coord in segmentStr.split(':')[1:]]
+    interval = strToBed(segmentStr, separator=':')
     if genome is not None:
-        if not chromosome in genome.keys():
+        if not interval.chromosome in genome.keys():
             print("Unknown chromosome id for loaded genome: {}".format(chromosome))
             print("Valid chromosomes are: " + ','.join(genome.keys()))
             exit(-1)
-        if (start >= stop) or (stop > len(genome[chromosome])):
+        if (interval.start >= interval.stop) or (interval.stop > len(genome[interval.chromosome])):
             print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
-                start, stop, chromosome, len(genome[chromosome])))
+                interval.start, interval.stop, interval.chromosome, len(genome[interval.chromosome])))
             exit(-2)
-    return GenomeInterval(chromosome, start,stop)
+    return interval
+
 
 def complement(sequence):
     """
@@ -35,6 +53,7 @@ def complement(sequence):
     basecomplement = {'a': 't', 'c': 'g', 'g': 'c', 't': 'a', 'n': 'n'}
     return ''.join([basecomplement[base] for base in sequence])
 
+
 def revcomp(sequence):
     """
     Make reverse-compliment of input sequence
@@ -43,25 +62,27 @@ def revcomp(sequence):
     """
     return complement(sequence)[::-1]
 
+
 def readFasta(fastaFile):
     """
     Reads genome from fasta file
     :param fastaFile : Input file to read sequences
     :return: dictionary {'chromosomeID':'ChromosomeSequence'}
     """
-    genome = {} # Dictionary of chromosomes
+    genome = {}  # Dictionary of chromosomes
     chrId = ''
     chrSeq = []
     for line in fastaFile:
-        if line[0] == '>': # Next fasta record
-            if chrId != '':     # Dumping current fast record
+        if line[0] == '>':  # Next fasta record
+            if chrId != '':  # Dumping current fast record
                 genome[chrId] = ''.join(chrSeq).lower()
-            chrId = re.search(r'>([A-z0-9]+) ',line).group(1) # Extracting new chromosome ID
-            chrSeq=[]
+            chrId = re.search(r'>([A-z0-9]+) ', line).group(1)  # Extracting new chromosome ID
+            chrSeq = []
         else:
             chrSeq.append(line.strip())
-    genome[chrId] = ''.join(chrSeq).lower() # Adding to dictionary last readed chromosome
+    genome[chrId] = ''.join(chrSeq).lower()  # Adding to dictionary last readed chromosome
     return genome
+
 
 def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
     """
@@ -71,18 +92,56 @@ def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
     """
     fragmentsFile = open(fragmentsFileName, 'w')
     for chromosome in fragmentsPositions.keys():
-        sortedFragments=sorted(fragmentsPositions[chromosome].keys())
+        sortedFragments = sorted(fragmentsPositions[chromosome].keys())
         for fragment in sortedFragments:
-            fragmentString = '{}\t{:35}\t {}\n'.format(chromosome,fragment, 
-                ','.join([str(i) for i in fragmentsPositions[chromosome][fragment]]))
+            fragmentString = '{}\t{:35}\t {}\n'.format(chromosome, fragment,
+                                                       ','.join(
+                                                           [str(i) for i in fragmentsPositions[chromosome][fragment]]))
             fragmentsFile.write(fragmentString)
     fragmentsFile.close()
 
+
 def dumpCountsToFile(countsFileName, nCounts, chunkSize):
+    """
+    writes calculated counts of fragments to text file
+    :param countsFileName: name of file to write
+    :param nCounts: dictionary containing normalized counts data from normalizeCounts function
+    :param chunkSize:  size of one chunk
+    """
     countsFile = open(countsFileName, 'w')
     for chromosome in nCounts.keys():
-        for chunk,nCount in enumerate(nCounts[chromosome]):
-            start,stop = chunk*chunkSize, (chunk+1)*chunkSize - 1
-            countString = '{}\t{}\t{}\t{:10.5f}\n'.format(chromosome, start,stop, nCount)
+        for chunk, nCount in enumerate(nCounts[chromosome]):
+            start, stop = chunk * chunkSize, (chunk + 1) * chunkSize - 1
+            countString = '{}\t{}\t{}\t{:10.5f}\n'.format(chromosome, start, stop, nCount)
             countsFile.write(countString)
     countsFile.close()
+
+
+def readCytomap(cytomapFileName):
+    """
+    Reads Cytomap file in BED notation
+    :param cytomapFileName: name of
+    :return: cytomap - list of GenomeInterval objects
+    """
+    cytomapFile = open(cytomapFileName)
+    cytomap = []
+    for line in cytomapFile:
+        interval = strToBed(line)
+        cytomap.append(interval)
+    return cytomap
+
+
+def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
+    """
+    Writes cytomap counts to BED file : cytobans genome coordinates, band ID and counts
+    :param cytoCountsFileName: name of file to write
+    :param cytomap: list of GenomeInterval objects representing cytomap
+    :param cytoCounts: Numpy array of counts in the same order, as in cytomap list
+    :return:
+    """
+    cytoCountsFile = open(cytoCountsFileName, 'w')
+    for i,interval in enumerate(cytomap):
+        cytoCountsStr = '{}\t{}\t{}\t{}\t{}\n'.format(
+            interval.chromosome,interval.start,interval.stop,interval.ID, cytoCounts[i])
+        cytoCountsFile.write(cytoCountsStr)
+

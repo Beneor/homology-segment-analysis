@@ -13,9 +13,10 @@ import sys
 import gzip
 from os.path import join, abspath, curdir
 
+# Adding local path to import program modules
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
 from segmentanalysis import segmentutils
-from segmentanalysis import segmentsearch,segmentstatistics
+from segmentanalysis import segmentsearch, segmentstatistics
 
 # 0. ANALYZING INPUT PARAMETERS
 
@@ -29,13 +30,19 @@ parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
 parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
                     help='Set of fragment sizes to search')
-parser.add_argument("-d", "--fragmentdensity", type=int, default=10,
-                    help='Average frequency of fragments in letters. Default 25 means that in average each 25-th letter will be start of fragment')
+parser.add_argument("-d", "--fragmentdensity", type=int, default=5,
+                    help='Average frequency of fragments in letters. Default 5 means that in average each 5-th letter will be start of fragment')
 
 parser.add_argument("-c", "--chunk", type=int, default=10,
                     help='Chunk size to divide chromosome, in kilobases')
 
-parser.add_argument("--dump", action='store_true',default=True,
+parser.add_argument("-y", "--cytomap", type=str,
+                    help='Cytomap to combine chunks')
+parser.add_argument("-m", "--mergedirections", action='store_true', default=True,
+                    help='')
+
+
+parser.add_argument("--dump", action='store_true', default=True,
                     help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
 parser.add_argument("--mindumpsize", type=int, default=10,
                     help='Minumum size of fragment to store in file')
@@ -48,7 +55,7 @@ args = parser.parse_args()
 if args.fastaFileName.endswith('.gz'):
     fastaFile = gzip.open(args.fastaFileName, 'rt')
 else:
-    fastaFile = open(args.fastaFileName,'r')
+    fastaFile = open(args.fastaFileName, 'r')
 
 if args.verbose:
     print('Loading genome from FASTA file')
@@ -59,51 +66,59 @@ fastaFile.close()
 segment = segmentutils.segmentStrToGGenomeInterval(args.segment, genome)
 
 segmentSeqFor = genome[segment.chromosome][segment.start:segment.stop]
-segmentSeqs = {'dir':segmentSeqFor, 'rev':segmentutils.revcomp(segmentSeqFor)}
+segmentSeqs = {'dir': segmentSeqFor, 'rev': segmentutils.revcomp(segmentSeqFor)}
 
 # 2. Size of chunks and selected fragments
 fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
 chunkSize = args.chunk * 1000
 
-# II. SEARCH OF MATCHING FRAGMENTS
+# II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
 # Generating random fragments from selected region
-for direction,segmentSeq in segmentSeqs.items():
-    for fragmentSize in fragmentSizes:
-        # This is main cycle since all sizes handled individually
+for fragmentSize in fragmentSizes:
+    normalizedCounts = {}
+    for direction, segmentSeq in segmentSeqs.items():
+        # III. GENERATING FRAGMENTS
         if args.verbose:
             print('Generating fragments in {} direction for size: {}'.format(direction, fragmentSize))
         fragments = segmentsearch.chooseFragments(segmentSeq, fragmentSize, args.fragmentdensity)
 
-        # Searching for fragments in chromosome
+        # IV. SEARCH OF MATCHING FRAGMENTS
         chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
         if args.dump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print('Dumping fragments to text file')
             fragmentsFileName = '{}.fragments.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
             segmentutils.dumpFragmentsToFile(fragmentsFileName, chrFragmentsPositions)
-
+        # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
         counts = segmentstatistics.chunksToCounts(chrPositionsChunks, genome, chunkSize)
         # Removing counts inside fragment
         if args.verbose:
-            print('Setting to zero counts for chunks',segment.chromosome,
-                  ':' ,segment.start // chunkSize,'-',segment.stop // chunkSize)
+            print('Setting to zero counts for chunks', segment.chromosome,
+                  ':', segment.start // chunkSize, '-', segment.stop // chunkSize)
         for chunk in range(segment.start // chunkSize, segment.stop // chunkSize):
             counts[segment.chromosome][chunk] = 0
         # Normalizing counts
         if args.verbose:
             print('Normalising matches')
-        normalizedCounts = segmentstatistics.normalizeCounts(counts)
+        normalizedCounts[direction] = segmentstatistics.normalizeCounts(counts)
         if args.dump:
             if args.verbose:
                 print('Dumping normalized counts')
             countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
-            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts, chunkSize)
-
-        # Group chunks by chromosome regions
-        
-        #Pearson correlation
-
-# IV. ANALYSIS
-    
+            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts[direction], chunkSize)
+    # VI. GROUPING BY CYTOBANDS
+    if args.cytomap is not None:
+        if args.verbose:
+            print('Grouping counts by cytomap regions')
+        cytomap = segmentutils.readCytomap(args.cytomap)
+        cytomapCounts = {}
+        for direction, nCounts in normalizedCounts.items():
+            cytomapCounts[direction] = segmentstatistics.chunksToCytomap(cytomap, nCounts, chunkSize)
+            cytoCountsFileName = '{}.cytocounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+            segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])
+        # Outputting merged cytomap data
+        if args.mergedirections:
+            cytoCountsMergedFileName = '{}.cytocounts.l{:02d}-merged.txt'.format(args.fastaFileName, fragmentSize)
+            segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, cytomapCounts['dir']+cytomapCounts['rev'])
