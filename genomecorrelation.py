@@ -14,6 +14,7 @@ import sys
 from os.path import join, abspath, curdir
 
 import numpy as np
+import matplotlib.pyplot as plt 
 from scipy.stats.stats import pearsonr
 
 # Adding local path to import program modules
@@ -44,12 +45,15 @@ homology = segmentutils.readBedFile(args.homologyFileName)
 
 # Converting to numpy arrays
 
-homologyArr = [float(interval.value) for interval in homology]
-ectopicsArr = [ectopics[interval.ID] for interval in homology]
+homologyArr = np.array([float(interval.value) for interval in homology])
+ectopicsArr = np.array([ectopics[interval.ID]*1000 for interval in homology])
+coor = np.array([(interval.start+interval.stop)/2 for interval in homology])
 
-print(homologyArr)
-print(ectopicsArr)
+corrCoef, pValue = pearsonr(homologyArr, ectopicsArr )
 
-corrCoef, pValue = pearsonr(np.array(homologyArr), np.array(ectopicsArr))
+plt.plot(coor, homologyArr, coor, ectopicsArr )
+plt.show()
+
+
 print("Correlation coefficient: ", corrCoef)
 print("P-Value: ", pValue)
