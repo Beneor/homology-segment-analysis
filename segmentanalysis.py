@@ -103,11 +103,10 @@ for fragmentSize in fragmentSizes:
         if args.verbose:
             print('Normalising matches')
         normalizedCounts[direction] = segmentstatistics.normalizeCounts(counts)
-        if args.dump:
-            if args.verbose:
-                print('Dumping normalized counts')
-            countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
-            segmentutils.dumpCountsToFile(countsFileName, normalizedCounts[direction], chunkSize)
+        if args.verbose:
+            print('Dumping normalized counts')
+        countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+        segmentutils.dumpNCounts(countsFileName, normalizedCounts[direction], chunkSize)
     # VI. GROUPING BY CYTOBANDS
     if args.cytomap is not None:
         if args.verbose:

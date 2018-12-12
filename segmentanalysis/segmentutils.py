@@ -103,7 +103,7 @@ def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
     fragmentsFile.close()
 
 
-def dumpCountsToFile(countsFileName, nCounts, chunkSize):
+def dumpNCounts(countsFileName, nCounts, chunkSize):
     """
     writes calculated counts of fragments to text file
     :param countsFileName: name of file to write
@@ -114,7 +114,7 @@ def dumpCountsToFile(countsFileName, nCounts, chunkSize):
     for chromosome in nCounts.keys():
         for chunk, nCount in enumerate(nCounts[chromosome]):
             start, stop = chunk * chunkSize, (chunk + 1) * chunkSize - 1
-            countString = '{}\t{}\t{}\t{:10.5f}\n'.format(chromosome, start, stop, nCount)
+            countString = '{}\t{}\t{}\tchunk{}\t{:10.5f}\n'.format(chromosome, start, stop, chunk, nCount)
             countsFile.write(countString)
     countsFile.close()
 
