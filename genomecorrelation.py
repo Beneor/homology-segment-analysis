@@ -12,14 +12,17 @@ and calculates Pearson correlation between fragment frequencies for chromosome d
 import argparse
 import sys
 from os.path import join, abspath, curdir
+from collections import defaultdict
 
 import numpy as np
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from scipy.stats.stats import pearsonr
 
 # Adding local path to import program modules
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
 from segmentanalysis import segmentutils
+
+chromosomeDataStr = 'Chromosome: {}, correlation: {:5.4f}, P-value: {:5.4f}'
 
 
 def readEctopics(ectopicsFileName):
@@ -31,29 +34,55 @@ def readEctopics(ectopicsFileName):
     return ectopics
 
 
-# 0. ANALYZING INPUT PARAMETERS
+def collectByChromosomes(intervalList):
+    intervalsByChromosome = defaultdict(list)
+    for interval in intervalList:
+        intervalsByChromosome[interval.chromosome].append(interval)
+    return intervalsByChromosome
+
+
+# ANALYZING INPUT PARAMETERS
 parser = argparse.ArgumentParser(description=programDescription, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("homologyFileName", type=str,
-                    help="FASTA file (may be gzipped) containing genome sequence")
-parser.add_argument("ectopicsFileName", type=str,
-                    help="segment of chromosome to analyze (X:16113516:16900779) in BED-file notation (starting from 0, end is not included)")
-
+                    help="BED-formatted file holding homology data")
+parser.add_argument("ectopicsFileName", type=str, nargs='?',
+                    help="Tab-delimeted file containing ectopic contacts data")
 args = parser.parse_args()
 
-ectopics = readEctopics(args.ectopicsFileName)
-homology = segmentutils.readBedFile(args.homologyFileName)
+# Reading input data
+homology = collectByChromosomes(segmentutils.readBedFile(args.homologyFileName))
+ectopics = readEctopics(args.ectopicsFileName) if args.ectopicsFileName else None
 
 # Converting to numpy arrays
+nChromosomes = len(homology.keys())
+fig, subplots = plt.subplots(nChromosomes, 1, squeeze=False)
+subplots.shape = (nChromosomes,)
 
-homologyArr = np.array([float(interval.value) for interval in homology])
-ectopicsArr = np.array([ectopics[interval.ID]*1000 for interval in homology])
-coor = np.array([(interval.start+interval.stop)/2 for interval in homology])
+for i, (chromosome, intervalList) in enumerate(homology.items()):
+    # Converting homolody metricks to NumPy arrays and calculating correlation
+    homologyArr = np.array([float(interval.value) for interval in intervalList])
+    # Plotting data
+    currPlot = subplots[i]
+    title = 'Chromosome: ' + chromosome
 
-corrCoef, pValue = pearsonr(homologyArr, ectopicsArr )
-
-plt.plot(coor, homologyArr, coor, ectopicsArr )
+    positions = np.array([(interval.start + interval.stop) / 2 for interval in intervalList])
+    # Plotting homology data
+    color = 'tab:blue'
+    currPlot.set_xlabel('Position (b.p.)')
+    currPlot.set_ylabel('Homology', color=color)
+    currPlot.plot(positions, homologyArr, color=color)
+    currPlot.tick_params(axis='y', labelcolor=color)
+    if ectopics is not None:  # Plotting ectopics
+        ectopicsArr = np.array([ectopics[interval.ID] for interval in intervalList if interval.ID in ectopics.keys()])
+        if len(ectopicsArr) > 0:
+            corrCoef, pValue = pearsonr(homologyArr, ectopicsArr)
+            print(chromosomeDataStr.format(chromosome, corrCoef, pValue))
+            title = chromosomeDataStr.format(chromosome, corrCoef, pValue)
+            ax2 = currPlot.twinx()  # instantiate a second axes that shares the same x-axis
+            color = 'tab:red'
+            ax2.set_ylabel('ectopics', color=color)  # we already handled the x-label with ax1
+            ax2.plot(positions, ectopicsArr, color=color)
+            ax2.tick_params(axis='y', labelcolor=color)
+            fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    currPlot.set_title(title)
 plt.show()
-
-
-print("Correlation coefficient: ", corrCoef)
-print("P-Value: ", pValue)
