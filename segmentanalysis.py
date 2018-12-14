@@ -11,6 +11,7 @@ and calculates Pearson correlation between fragment frequencies for chromosome d
 import argparse
 import sys
 import gzip
+import os
 from os.path import join, abspath, curdir
 
 # Adding local path to import program modules
@@ -25,6 +26,8 @@ parser.add_argument("fastaFileName", type=str,
                     help="FASTA file (may be gzipped) containing genome sequence")
 parser.add_argument("segment", type=str,
                     help="segment of chromosome to analyze (X:16113516:16900779) in BED-file notation (starting from 0, end is not included)")
+parser.add_argument("cytomap", type=str,nargs='?',
+                    help="BED file containing cytobands")
 
 parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
@@ -32,16 +35,10 @@ parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30
                     help='Set of fragment sizes to search')
 parser.add_argument("-d", "--fragmentdensity", type=int, default=5,
                     help='Average frequency of fragments in letters. Default 5 means that in average each 5-th letter will be start of fragment')
-
-parser.add_argument("-c", "--chunk", type=int, default=10,
+parser.add_argument("-c", "--chunk", type=float, default=10.0,
                     help='Chunk size to divide chromosome, in kilobases')
-
-parser.add_argument("-y", "--cytomap", type=str,
-                    help='Cytomap to combine chunks')
 parser.add_argument("-m", "--mergedirections", action='store_true', default=True,
-                    help='')
-
-
+                    help='Output combined ncounts by both directions')
 parser.add_argument("--dump", action='store_true', default=True,
                     help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
 parser.add_argument("--mindumpsize", type=int, default=10,
@@ -70,13 +67,27 @@ segmentSeqs = {'dir': segmentSeqFor, 'rev': segmentutils.revcomp(segmentSeqFor)}
 
 # 2. Size of chunks and selected fragments
 fragmentSizes = [int(size) for size in args.fragmentsizes.split(',')]
-chunkSize = args.chunk * 1000
+chunkSize = int(args.chunk * 1000)
+
+# 3. Folder to save results
+outputFolder = '{}.{}-{}-{}'.format(args.fastaFileName, segment.chromosome, segment.start, segment.stop)
+if os.path.exists(outputFolder):
+    print('Output folder {} already exists\nPlase delete and resubmit'.format(outputFolder))
+    exit(0)
+os.makedirs(outputFolder)
+
+if args.cytomap is not None:
+    cytomap = segmentutils.readBedFile(args.cytomap)
+    if args.verbose:
+        print('Grouping counts by cytomap regions')
+
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
 # Generating random fragments from selected region
 for fragmentSize in fragmentSizes:
     normalizedCounts = {}
+    cytomapCounts = {}
     for direction, segmentSeq in segmentSeqs.items():
         # III. GENERATING FRAGMENTS
         if args.verbose:
@@ -88,7 +99,7 @@ for fragmentSize in fragmentSizes:
         if args.dump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print('Dumping fragments to text file')
-            fragmentsFileName = '{}.fragments.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+            fragmentsFileName = '{}/fragments.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
             segmentutils.dumpFragmentsToFile(fragmentsFileName, chrFragmentsPositions)
         # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
@@ -105,19 +116,26 @@ for fragmentSize in fragmentSizes:
         normalizedCounts[direction] = segmentstatistics.normalizeCounts(counts)
         if args.verbose:
             print('Dumping normalized counts')
-        countsFileName = '{}.ncounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+        countsFileName = '{}/ncounts.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
         segmentutils.dumpNCounts(countsFileName, normalizedCounts[direction], chunkSize)
-    # VI. GROUPING BY CYTOBANDS
-    if args.cytomap is not None:
-        if args.verbose:
-            print('Grouping counts by cytomap regions')
-        cytomap = segmentutils.readBedFile(args.cytomap)
-        cytomapCounts = {}
-        for direction, nCounts in normalizedCounts.items():
-            cytomapCounts[direction] = segmentstatistics.chunksToCytomap(cytomap, nCounts, chunkSize)
-            cytoCountsFileName = '{}.cytocounts.l{:02d}-{}.txt'.format(args.fastaFileName, fragmentSize, direction)
+
+        # VI. GROUPING BY CYTOBANDS
+        if args.cytomap is not None:
+            if args.verbose:
+                print('Grouping counts by cytomap regions')
+            cytomapCounts[direction] = segmentstatistics.chunksToCytomap(cytomap,
+                                                                         normalizedCounts[direction], chunkSize)
+            cytoCountsFileName = '{}/cytocounts.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
             segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])
-        # Outputting merged cytomap data
-        if args.mergedirections:
-            cytoCountsMergedFileName = '{}.cytocounts.l{:02d}-merged.txt'.format(args.fastaFileName, fragmentSize)
-            segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, cytomapCounts['dir']+cytomapCounts['rev'])
+
+    # Outputting merged counts
+    if args.mergedirections:
+        nCountsMergedFileName = '{}/ncounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+        mergedCounts = {
+            chromosome: (normalizedCounts['dir'][chromosome] + normalizedCounts['rev'][chromosome]) / 2
+            for chromosome in normalizedCounts['dir'].keys()}
+        segmentutils.dumpNCounts(nCountsMergedFileName, mergedCounts, chunkSize)
+        if args.cytomap is not None:
+            cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+            mergedCytoCounts = (cytomapCounts['dir'] + cytomapCounts['rev']) / 2
+            segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)
