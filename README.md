@@ -16,17 +16,27 @@ Just checkout from maser branch code and run master script segmentanalysis.py
 ## Usage
 
 ### Default setings
-`segmentanalysis.py <options> chromosomeseq segment`
+`segmentanalysis.py <options> chromosomeseq segment [cytoamnds file]`
 
 The required parameters are
 
   `chromosomeseq` ---        TXT file containing chromosome sequence (one string,
                         small letters, no name, no spaces)
                         
-  `segment` ---              segment of chromosome to analyze (16113516:16900779)
-                        in BED-file notation (starting from 0, end is not
-                        included)
+  `segment` ---              segment of chromosome to analyze. See below format notes
 
+'segment' option can have flexible format to handle multiple cases. 
+In general it contains name of fasta file and location of segment in this file in BED notation (chromosome, start,stop) divided by `:`
+File name can be omitted to take segment from same genome as analyzed one
+Start and stop locations also can be omiited to use whole fastea record. 
+
+#### Examples
+* examples/S-LIMK1.fa:S-LIMK1:500:1500 -- part of S-LIMK1 sequence from file examples/S-LIMK1.fa (letters 500-1500)
+* examples/S-LIMK1.fa:S-LIMK1 -- whole S-LIMK1 sequence from file examples/S-LIMK1.fa
+* :X:11982050:12772070 - 11AB -- region 11AB from Drosophila X-chromosome (same genome as analyzed)
+* :X:16113516:16900779 - 14B -- different region from Drosophila X-chromosome - no correlation between homology and ectopic contacts
+
+                        
 ### Optional arguments
 
 *  `-h, --help`  ---          show this help message and exit

@@ -33,16 +33,30 @@ def strToBed(line, separator='\t'):
 
 
 def segmentStrToGGenomeInterval(segmentStr, genome):
-    interval = strToBed(segmentStr, separator=':')
-    if genome is not None:
-        if not interval.chromosome in genome.keys():
-            print("Unknown chromosome id for loaded genome: {}".format(chromosome))
-            print("Valid chromosomes are: " + ','.join(genome.keys()))
-            exit(-1)
-        if (interval.start >= interval.stop) or (interval.stop > len(genome[interval.chromosome])):
-            print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
-                interval.start, interval.stop, interval.chromosome, len(genome[interval.chromosome])))
-            exit(-2)
+    """
+    Converts bed-like location string to genome interval. Start and stop values can be omitted
+    :param segmentStr: text string contatining denome location
+            chromosome:start:stop in full notation
+            chromosome - in short notation
+    :param genome: - dictionaly containing loaded genome, for which location should be taken
+    :return: GenomeInterval object containing location
+    """
+    # Determining do we have start and stop positions in input string
+    chromosomePos = segmentStr.find(':')
+    chromosome = segmentStr[:chromosomePos] if chromosomePos > 0 else segmentStr  # Extracting chromosome
+    # Checking for consitency with genome
+    if not chromosome in genome.keys():
+        print("Unknown chromosome id for loaded genome: {}".format(chromosome))
+        print("Valid chromosomes are: " + ','.join(genome.keys()))
+        exit(-1)
+    # Creating interval from full location strigng or for chromosome
+    interval = strToBed(segmentStr, separator=':') if chromosomePos > 0 else GenomeInterval(
+        segmentStr, 0, len(genome[segmentStr]))
+
+    if (interval.start >= interval.stop) or (interval.stop > len(genome[interval.chromosome])):
+        print("Segment coordinates {}:{} are incorrect or greater then chromosome {} size: {}".format(
+            interval.start, interval.stop, interval.chromosome, len(genome[interval.chromosome])))
+        exit(-2)
     return interval
 
 
@@ -78,7 +92,7 @@ def readFasta(fastaFile):
         if line[0] == '>':  # Next fasta record
             if chrId != '':  # Dumping current fast record
                 genome[chrId] = ''.join(chrSeq).lower()
-            chrId = re.search(r'>([A-z0-9]+) ', line).group(1)  # Extracting new chromosome ID
+            chrId = re.search(r'>([-_A-z0-9]+)\s|$', line).group(1)  # Extracting new chromosome ID
             chrSeq = []
         else:
             chrSeq.append(line.strip())

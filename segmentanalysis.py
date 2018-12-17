@@ -25,8 +25,8 @@ parser = argparse.ArgumentParser(description=programDescription, formatter_class
 parser.add_argument("fastaFileName", type=str,
                     help="FASTA file (may be gzipped) containing genome sequence")
 parser.add_argument("segment", type=str,
-                    help="segment of chromosome to analyze (X:16113516:16900779) in BED-file notation (starting from 0, end is not included)")
-parser.add_argument("cytomap", type=str,nargs='?',
+                    help="segment of chromosome to analyze: file and location (:X:11982050:12772070). See README.md for details")
+parser.add_argument("cytomap", type=str, nargs='?',
                     help="BED file containing cytobands")
 
 parser.add_argument("-v", "--verbose", action='store_true',
@@ -53,16 +53,18 @@ if args.fastaFileName.endswith('.gz'):
     fastaFile = gzip.open(args.fastaFileName, 'rt')
 else:
     fastaFile = open(args.fastaFileName, 'r')
-
 if args.verbose:
     print('Loading genome from FASTA file')
 genome = segmentutils.readFasta(fastaFile)
 fastaFile.close()
 
 # 1. Selection of chromosome segment
-segment = segmentutils.segmentStrToGGenomeInterval(args.segment, genome)
-
-segmentSeqFor = genome[segment.chromosome][segment.start:segment.stop]
+locationPos = args.segment.index(':')
+# Determining do we have seconn file name in location, and reading seconf genome if nesessary
+segmentGenome = segmentutils.readFasta(open(args.segment[:locationPos], 'r')) if locationPos != 0 else genome
+# Extracting segment location
+segment = segmentutils.segmentStrToGGenomeInterval(args.segment[locationPos + 1:], segmentGenome)
+segmentSeqFor = segmentGenome[segment.chromosome][segment.start:segment.stop]
 segmentSeqs = {'dir': segmentSeqFor, 'rev': segmentutils.revcomp(segmentSeqFor)}
 
 # 2. Size of chunks and selected fragments
@@ -72,7 +74,7 @@ chunkSize = int(args.chunk * 1000)
 # 3. Folder to save results
 outputFolder = '{}.{}-{}-{}'.format(args.fastaFileName, segment.chromosome, segment.start, segment.stop)
 if os.path.exists(outputFolder):
-    print('Output folder {} already exists\nPlase delete and resubmit'.format(outputFolder))
+    print('Output folder {} already exists\nPlease delete and resubmit'.format(outputFolder))
     exit(0)
 os.makedirs(outputFolder)
 
@@ -80,7 +82,6 @@ if args.cytomap is not None:
     cytomap = segmentutils.readBedFile(args.cytomap)
     if args.verbose:
         print('Grouping counts by cytomap regions')
-
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
@@ -104,12 +105,12 @@ for fragmentSize in fragmentSizes:
         # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
         counts = segmentstatistics.chunksToCounts(chrPositionsChunks, genome, chunkSize)
-        # Removing counts inside fragment
-        if args.verbose:
-            print('Setting to zero counts for chunks', segment.chromosome,
-                  ':', segment.start // chunkSize, '-', segment.stop // chunkSize)
-        for chunk in range(segment.start // chunkSize, segment.stop // chunkSize):
-            counts[segment.chromosome][chunk] = 0
+        if segmentGenome is genome:  # Removing counts inside fragment
+            if args.verbose:
+                print('Setting to zero counts for chunks {}:{}-{}'.format(segment.chromosome,
+                      segment.start // chunkSize, segment.stop // chunkSize))
+            for chunk in range(segment.start // chunkSize, segment.stop // chunkSize):
+                counts[segment.chromosome][chunk] = 0
         # Normalizing counts
         if args.verbose:
             print('Normalising matches')
