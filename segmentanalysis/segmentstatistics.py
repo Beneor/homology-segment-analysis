@@ -83,6 +83,9 @@ def chunksToCytomap(cytomap, nCounts, chunkSize):
     """
     cytoCounts = np.zeros(len(cytomap))
     for i, interval in enumerate(cytomap):
+        if not interval.chromosome in nCounts.keys(): # genome doesn't contain this interval
+            print("WARNING:  Genome doen't contain chromosome listen in cytomap: ",interval.chromosome)
+            continue
         for chunk in range(interval.start // chunkSize, interval.stop // chunkSize):
             cytoCounts[i] += nCounts[interval.chromosome][chunk]
     return cytoCounts

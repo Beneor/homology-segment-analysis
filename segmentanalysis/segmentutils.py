@@ -9,7 +9,7 @@ class GenomeInterval:
     chromosome, start, stop and optional text ID
     """
 
-    def __init__(self, chromosome, start, stop, ID=None, value = None):
+    def __init__(self, chromosome, start, stop, ID=None, value=None):
         self.chromosome = chromosome
         self.start = start
         self.stop = stop
@@ -127,10 +127,18 @@ def readBedFile(BedFileName):
     """
     bedFile = open(BedFileName)
     genomeFeatures = []
-    for line in bedFile:
+    IDs = set()
+    for nLine, line in enumerate(bedFile):
+        if line.strip()[0] == '#':  # Skipping comment
+            continue
         interval = strToBed(line)
         genomeFeatures.append(interval)
+        if interval.ID in IDs:
+            print("WARNING: Non-unique interval ID {} at line {}".format(interval.ID, nLine))
+        IDs.add(interval.ID)
+
     return genomeFeatures
+
 
 def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
     """
@@ -141,8 +149,7 @@ def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
     :return:
     """
     cytoCountsFile = open(cytoCountsFileName, 'w')
-    for i,interval in enumerate(cytomap):
+    for i, interval in enumerate(cytomap):
         cytoCountsStr = '{}\t{}\t{}\t{}\t{}\n'.format(
-            interval.chromosome,interval.start,interval.stop,interval.ID, cytoCounts[i])
+            interval.chromosome, interval.start, interval.stop, interval.ID, cytoCounts[i])
         cytoCountsFile.write(cytoCountsStr)
-
