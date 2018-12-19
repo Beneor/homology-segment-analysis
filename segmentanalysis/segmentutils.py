@@ -128,7 +128,7 @@ def dumpNCounts(countsFileName, nCounts, chunkSize):
     for chromosome in nCounts.keys():
         for chunk, nCount in enumerate(nCounts[chromosome]):
             start, stop = chunk * chunkSize, (chunk + 1) * chunkSize - 1
-            countString = '{}\t{}\t{}\tchunk{}\t{:10.5f}\n'.format(chromosome, start, stop, chunk, nCount)
+            countString = '{0}\t{1}\t{2}\t{0}chunk{3}\t{4:10.5f}\n'.format(chromosome, start, stop, chunk, nCount)
             countsFile.write(countString)
     countsFile.close()
 
