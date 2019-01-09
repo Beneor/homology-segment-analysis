@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
 
-programDescription = '''
-This script produces a set of short (5 - 30 by default) random fragments for the specified chromosome segment,
-splits chromosome into a set of long (10 kb by default) chunks,
-seeks random segments within chromosome parts,
-computes frequencies of occurence for segments of different length within chromosome parts,
-makes table for the normalized frequencies,
-and calculates Pearson correlation between fragment frequencies for chromosome discs and ectopic contact frequencies
-'''
-
 import argparse
 import sys
 from os.path import join, abspath, curdir
@@ -22,14 +13,28 @@ from scipy.stats.stats import pearsonr, spearmanr
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
 from segmentanalysis import segmentutils
 
-chromosomeDataStr = 'Chromosome: {}, {} correlation: {:5.4f}, P-value: {:5.4f}'
 
+programDescription = '''
+This script makes plot of normalisez matching frequencies calculated by segmentanalysis.py script. 
+Script is able to make plots for counts normalized by chunks or by cytobands. 
+If some experiments data for genome (for example ectopic contacts frequency) are avaliable, 
+script plots experimental data on the same grach and calculates correlation between fragments matching frequencies
+adn experimental data.
+
+See details in program description in README.md
+'''
+
+chromosomeDataStr = 'Chromosome: {}, {} correlation: {:5.4f}, P-value: {:5.4f}'
 correlationMethods = {'Spearman': spearmanr,
                       'Pearson': pearsonr
                       }
 
-
 def readEctopics(ectopicsFileName):
+    """
+    Reads ectopics or nay similar genome data from tab-delimited file
+    :param ectopicsFileName: file name to read data
+    :return: dictionary of regions named adn regions data
+    """
     ectopicsFile = open(ectopicsFileName)
     ectopics = {}
     for line in ectopicsFile:
@@ -39,6 +44,13 @@ def readEctopics(ectopicsFileName):
 
 
 def collectByChromosomes(intervalList):
+    """
+    Grouping list of genome intervals by chromosomes
+    :param intervalList: list of BED intervals, read from file
+    :return: dictionary:
+        key: chromosome name
+        value: list of intervals for particular chromosome
+    """
     intervalsByChromosome = defaultdict(list)
     for interval in intervalList:
         intervalsByChromosome[interval.chromosome].append(interval)
@@ -67,6 +79,7 @@ parser.add_argument("-s", "--savefig", type=str,
 
 args = parser.parse_args()
 
+# Sixe of interval for x-axis ticks
 xinterval = args.xinterval * 1000
 
 # Reading input data
@@ -87,9 +100,8 @@ subplots.shape = (nChromosomes,)  # Resizing to linear array
 for i, (chromosome, intervalList) in enumerate(homology.items()):
     # Plotting data
     currPlot = subplots[i]
-    title = 'Chromosome: ' + chromosome
+    title = 'Chromosome: ' + chromosome # Default title for graphs
     color = 'tab:blue'
-    xLabel = 'Position (Mbases)'
     currPlot.set_ylabel('Homology', color=color)
 
     # Converting to NumPy and plotting homology data
@@ -97,7 +109,7 @@ for i, (chromosome, intervalList) in enumerate(homology.items()):
     homologyArr = np.array([float(interval.value) for interval in intervalList])
     currPlot.plot(positions, homologyArr, marker='o' if args.mark else None, color=color, label='Homology level')
 
-    # Setting graph labels, parameters et.c
+    # Setting graph labels, parameters et c.
     plt.sca(currPlot)  # Selecting current plot
     plt.tick_params(axis='y', labelcolor=color)
     if args.labels:  # Setting labels from interval IDs
@@ -107,14 +119,16 @@ for i, (chromosome, intervalList) in enumerate(homology.items()):
     else:  # Setting labels to megabases
         locs = np.arange(0, intervalList[-1].stop, xinterval)
         plt.xticks(locs, map(lambda x: "{:2.1f}".format(x), locs / 1e6))
+        xLabel = 'Position (Mbases)'
     currPlot.set_xlabel(xLabel)
     plt.xlim([0, intervalList[-1].stop])
 
     if ectopics is not None:  # Plotting ectopics
-        ectopicsArr = np.array([ectopics[interval.ID] for interval in intervalList if interval.ID in ectopics.keys()])
+        ectopicsArr = np.array([ectopics[interval.ID] for interval in intervalList
+                                if interval.ID in ectopics.keys()]) # Converting to numpy array
         if len(ectopicsArr) > 0:
             corrCoef, pValue = correlationMethods[args.correlation](homologyArr, ectopicsArr)
-            title = chromosomeDataStr.format(chromosome, args.correlation, corrCoef, pValue)
+            title = chromosomeDataStr.format(chromosome, args.correlation, corrCoef, pValue) # Changing title
             print(title)
             ax2 = currPlot.twinx()  # instantiate a second axes that shares the same x-axis
             color = 'tab:red'
@@ -124,7 +138,7 @@ for i, (chromosome, intervalList) in enumerate(homology.items()):
             ax2.tick_params(axis='y', labelcolor=color)
             fig.tight_layout()  # otherwise the right y-label is slightly clipped
     currPlot.set_title(title)
-    #currPlot.legend()
+    # currPlot.legend() #TODO: find how to add global legend for all graphs
 fig.tight_layout()
 if args.savefig:
     plt.savefig(args.savefig)
