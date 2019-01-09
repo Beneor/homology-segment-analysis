@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 
-programDescription = '''
-This script produces a set of short (5 - 30 by default) random fragments for the specified chromosome segment,
-splits chromosome into a set of long (10 kb by default) chunks,
-seeks random segments within chromosome parts,
-computes frequencies of occurence for segments of different length within chromosome parts,
-makes table for the normalized frequencies,
-and calculates Pearson correlation between fragment frequencies for chromosome discs and ectopic contact frequencies
-'''
 import argparse
 import sys
 import gzip
@@ -19,30 +11,40 @@ sys.path.append(abspath(join(curdir, 'segmentanalysis')))
 from segmentanalysis import segmentutils
 from segmentanalysis import segmentsearch, segmentstatistics
 
-# 0. ANALYZING INPUT PARAMETERS
+programDescription = '''
+This script produces a set of short (20-40 by default) fragments for the specified sequence segment,
+splits genome chromosomes into a set of long (10 kb by default) chunks and
+seeks for matching fragments within chunks.
+Then it computes frequencies of matching fragments fir each chunk and normalizes it.
+Also it calculates fragments matching frequency for cytobands, it cytoband information is provided.
 
+See details in program description in README.md  
+'''
+
+# 0. ANALYZING INPUT PARAMETERS
 parser = argparse.ArgumentParser(description=programDescription, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("fastaFileName", type=str,
                     help="FASTA file (may be gzipped) containing genome sequence")
 parser.add_argument("segment", type=str,
-                    help="segment of chromosome to analyze: file and location (:X:11982050:12772070). See README.md for details")
+                    help="segment of chromosome to analyze: file and location " +
+                         "(:X:11982050:12772070). See README.md for details")
 parser.add_argument("cytomap", type=str, nargs='?',
                     help="BED file containing cytobands")
 
 parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
-parser.add_argument("-s", "--fragmentsizes", type=str, default='5,10,15,20,25,30',
+parser.add_argument("-s", "--fragmentsizes", type=str, default='20,25,30,35,40',
                     help='Set of fragment sizes to search')
-parser.add_argument("-d", "--fragmentdensity", type=int, default=5,
-                    help='Average frequency of fragments in letters. Default 5 means that in average each 5-th letter will be start of fragment')
+parser.add_argument("-d", "--fragmentdensity", type=float,
+                    help='Use random chosen fragments instead of all possible. ' +
+                         'Sets average frequency of fragments in letters. ' +
+                         'For example 5 means that each 5-th letter will be start of fragment')
 parser.add_argument("-c", "--chunk", type=float, default=10.0,
                     help='Chunk size to divide chromosome, in kilobases')
-parser.add_argument("-m", "--mergedirections", action='store_true', default=True,
-                    help='Output combined ncounts by both directions')
-parser.add_argument("--dump", action='store_true', default=True,
-                    help='Save found fragments and positions to files (used only for fragments >= mindumpsize)')
-parser.add_argument("--mindumpsize", type=int, default=10,
-                    help='Minumum size of fragment to store in file')
+parser.add_argument("--nodump", action='store_true',
+                    help='Do not save found fragments and positions to files')
+parser.add_argument("--mindumpsize", type=int, default=20,
+                    help='Minimum size of fragment to store exact locations in file')
 
 args = parser.parse_args()
 
@@ -80,8 +82,6 @@ os.makedirs(outputFolder)
 
 if args.cytomap is not None:
     cytomap = segmentutils.readBedFile(args.cytomap)
-    if args.verbose:
-        print('Grouping counts by cytomap regions')
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
@@ -93,11 +93,14 @@ for fragmentSize in fragmentSizes:
         # III. GENERATING FRAGMENTS
         if args.verbose:
             print('Generating fragments in {} direction for size: {}'.format(direction, fragmentSize))
-        fragments = segmentsearch.chooseFragments(segmentSeq, fragmentSize, args.fragmentdensity)
+        if args.fragmentdensity is not None:
+            fragments = segmentsearch.chooseRandomFragments(segmentSeq, fragmentSize, args.fragmentdensity)
+        else:
+            fragments = segmentsearch.makeFragments(segmentSeq, fragmentSize)
 
         # IV. SEARCH OF MATCHING FRAGMENTS
         chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
-        if args.dump and fragmentSize >= args.mindumpsize:
+        if not args.nodump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print('Dumping fragments to text file')
             fragmentsFileName = '{}/fragments.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
@@ -130,13 +133,12 @@ for fragmentSize in fragmentSizes:
             segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])
 
     # Outputting merged counts
-    if args.mergedirections:
-        nCountsMergedFileName = '{}/ncounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
-        mergedCounts = {
-            chromosome: (normalizedCounts['dir'][chromosome] + normalizedCounts['rev'][chromosome]) / 2
-            for chromosome in normalizedCounts['dir'].keys()}
-        segmentutils.dumpNCounts(nCountsMergedFileName, mergedCounts, chunkSize)
-        if args.cytomap is not None:
-            cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
-            mergedCytoCounts = (cytomapCounts['dir'] + cytomapCounts['rev']) / 2
-            segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)
+    nCountsMergedFileName = '{}/ncounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+    mergedCounts = {
+        chromosome: (normalizedCounts['dir'][chromosome] + normalizedCounts['rev'][chromosome]) / 2
+        for chromosome in normalizedCounts['dir'].keys()}
+    segmentutils.dumpNCounts(nCountsMergedFileName, mergedCounts, chunkSize)
+    if args.cytomap is not None:
+        cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+        mergedCytoCounts = (cytomapCounts['dir'] + cytomapCounts['rev']) / 2
+        segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)
