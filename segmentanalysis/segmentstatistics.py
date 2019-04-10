@@ -53,6 +53,10 @@ def chunksToCounts(chrPositionsChunks, genome, chunkSize):
     return counts
 
 
+def excludeIntervalFromCounts(counts, interval, chunkSize):
+    for chunk in range(interval.start // chunkSize, interval.stop // chunkSize):
+        counts[interval.chromosome][chunk] = 0
+        
 def normalizeCounts(counts):
     """
     Normalizes counts by mean count value
@@ -72,20 +76,20 @@ def normalizeCounts(counts):
     return nCounts
 
 
-def chunksToCytomap(cytomap, nCounts, chunkSize):
+def countsToCytomap(cytomap, counts, chunkSize):
     """
     Sums couns in chunks by cytomap
     :param cytomap: cytomap readed from bed file -- list genome interval and cytoband ID
     :param nCounts: dictionary containing normalized counts data from normalizeCounts function
     :param chunkSize: size of one chunk to calculate start and stop chunks for cytoband
     :return: numpy array containing summarized counts in same order as in cytomap
-
     """
     cytoCounts = np.zeros(len(cytomap))
     for i, interval in enumerate(cytomap):
-        if not interval.chromosome in nCounts.keys(): # genome doesn't contain this interval
-            print("WARNING:  Genome doen't contain chromosome listen in cytomap: ",interval.chromosome)
+        if not interval.chromosome in counts.keys(): # genome doesn't contain this interval
+            print("WARNING:  Genome doen't contain chromosome listened in cytomap: ", interval.chromosome)
             continue
         for chunk in range(interval.start // chunkSize, interval.stop // chunkSize):
-            cytoCounts[i] += nCounts[interval.chromosome][chunk]
+            cytoCounts[i] += counts[interval.chromosome][chunk]
+
     return cytoCounts

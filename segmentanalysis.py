@@ -111,8 +111,7 @@ for fragmentSize in fragmentSizes:
             if args.verbose:
                 print('Setting to zero counts for chunks {}:{}-{}'.format(segment.chromosome,
                       segment.start // chunkSize, segment.stop // chunkSize))
-            for chunk in range(segment.start // chunkSize, segment.stop // chunkSize):
-                counts[segment.chromosome][chunk] = 0
+            segmentstatistics.excludeIntervalFromCounts(counts, segment, chunkSize)
         # Normalizing counts
         if args.verbose:
             print('Normalising matches')
@@ -126,7 +125,7 @@ for fragmentSize in fragmentSizes:
         if args.cytomap is not None:
             if args.verbose:
                 print('Grouping counts by cytomap regions')
-            cytomapCounts[direction] = segmentstatistics.chunksToCytomap(cytomap,
+            cytomapCounts[direction] = segmentstatistics.countsToCytomap(cytomap,
                                                                          normalizedCounts[direction], chunkSize)
             cytoCountsFileName = '{}/cytocounts.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
             segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])

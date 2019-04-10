@@ -16,6 +16,8 @@ class GenomeInterval:
         self.ID = ID
         self.value = value
 
+    def __repr__(self):
+        return('{}\t{}\t{}\t{}\t{}'.format(self.chromosome, self.start, self.stop, self.ID, self.value))
 
 def strToBed(line, separator='\t'):
     """
@@ -119,7 +121,7 @@ def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
     for chromosome in fragmentsPositions.keys():
         sortedFragments = sorted(fragmentsPositions[chromosome].keys())
         for fragment in sortedFragments:
-            fragmentString = '{}\t{:35}\t {}\n'.format(chromosome, fragment,
+            fragmentString = '{}\t{:}\t{}\n'.format(chromosome, fragment,
                                                        ','.join(
                                                            [str(i) for i in fragmentsPositions[chromosome][fragment]]))
             fragmentsFile.write(fragmentString)
