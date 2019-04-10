@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-import gzip
 import os
 from os.path import join, abspath, curdir
 
@@ -51,14 +50,14 @@ args = parser.parse_args()
 # I. INPUT FILES PREPARATION
 
 # 0. Reading genome sequence from FASTA[.gz] file
-if args.fastaFileName.endswith('.gz'):
-    fastaFile = gzip.open(args.fastaFileName, 'rt')
-else:
-    fastaFile = open(args.fastaFileName, 'r')
+#if args.fastaFileName.endswith('.gz'):
+##    fastaFile = gzip.open(args.fastaFileName, 'rt')
+#else:
+#    fastaFile = open(args.fastaFileName, 'r')
+
 if args.verbose:
     print('Loading genome from FASTA file')
-genome = segmentutils.readFasta(fastaFile)
-fastaFile.close()
+genome = segmentutils.readFasta(segmentutils.openMaybeGzipped(args.fastaFileName))
 
 # 1. Selection of chromosome segment
 locationPos = args.segment.index(':')

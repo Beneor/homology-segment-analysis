@@ -1,7 +1,7 @@
 # This module contains set of small service functions
 
 import re
-
+import gzip
 
 class GenomeInterval:
     """
@@ -64,7 +64,7 @@ def complement(sequence):
     """
     Make compliment of input sequence
     :param sequence: DNA sequence to make compliment
-    :return:
+    :return: Compliment DNA sequence
     """
     basecomplement = {'a': 't', 'c': 'g', 'g': 'c', 't': 'a', 'n': 'n'}
     return ''.join([basecomplement[base] for base in sequence])
@@ -74,9 +74,18 @@ def revcomp(sequence):
     """
     Make reverse-compliment of input sequence
     :param sequence: DNA sequence to revcomp
-    :return:
+    :return: Reverse-compliment DNA sequence
     """
     return complement(sequence)[::-1]
+
+
+def openMaybeGzipped(fileName):
+    """
+    Determines theter input file is gzip-compressed and returns file handler via gzip / text file correspondingly
+    :param fileName : Name of file to open
+    :return: file handler to read lines
+    """
+    return gzip.open(fileName, 'rt') if fileName.endswith('.gz') else open(fileName, 'r')
 
 
 def readFasta(fastaFile):
