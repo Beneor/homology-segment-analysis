@@ -142,4 +142,5 @@ for i, (chromosome, intervalList) in enumerate(homology.items()):
 fig.tight_layout()
 if args.savefig:
     plt.savefig(args.savefig)
-plt.show()
+else:
+    plt.show()
