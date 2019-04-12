@@ -34,7 +34,17 @@ def readEctopics(ectopicsFileName):
     return ectopics
 
 def findSubstringWithOverlaps(sub, string):
-    return [m.start() for m in re.finditer(r'(?='+sub+')', string)]
+    pos=0
+    indexes=[]
+    while True:
+        pos = string.find(sub, pos)
+        if pos > -1 :
+            indexes.append(pos)
+            pos +=1
+        else:
+            break
+    return indexes
+    #return [m.start() for m in re.finditer(sub, string, overlapped=True)]
 
 # 0. ANALYZING INPUT PARAMETERS
 parser = argparse.ArgumentParser(description=programDescription, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -46,8 +56,6 @@ parser.add_argument("fragment", type=str,
                     help="sequence of fragment to find correlations")
 parser.add_argument("cytomap", type=str,
                     help="BED file containing cytobands")
-parser.add_argument("ectopicsFileName", type=str,
-                    help="Tab-delimeted file containing ectopic contacts data")
 parser.add_argument("-v", "--verbose", action='store_true',
                     help='Print additional information to stdout')
 parser.add_argument("-c", "--chunk", type=float, default=10.0,
@@ -57,39 +65,43 @@ parser.add_argument("-e", "--exclude", type=str,
 
 args = parser.parse_args()
 
-#I. Arguments parsing
-
-#III. Collecting locations
-
+# I. Loading data
 if args.verbose:
     print('Loading genome from FASTA file')
 genome = segmentutils.readFasta(segmentutils.openMaybeGzipped(args.fastaFileName))
-
 chunkSize = int(args.chunk * 1000)
 
-cytomap = segmentutils.readBedFile(args.cytomap)
+
+# II. Searching for fragment locations
 
 chrPositionsChunks={}
-
 for chromosome in genome:
     # Now we search only for single fragment - no need to use Aho-Corasick search
     fragmentPositionsFor = np.fromiter(findSubstringWithOverlaps(args.fragment,                       genome[chromosome]), dtype=np.int64)
     fragmentPositionsRev = np.fromiter(findSubstringWithOverlaps(segmentutils.revcomp(args.fragment), genome[chromosome]), dtype=np.int64)
     if args.verbose:
-        print("Chromosome {} (forward) - {} occurences".format(chromosome, len(fragmentPositionsFor)))
-        print("Chromosome {} (reverse) - {} occurences".format(chromosome, len(fragmentPositionsRev)))
+        lFor = len(fragmentPositionsFor)
+        lRev = len(fragmentPositionsRev)
+        print("Chromosome {} (forward) - {} occurences, ({}-forward, {}-reverse)".format(chromosome, lFor+lRev, lFor, lRev))
+    #print(fragmentPositionsFor)
+    #open(args.fragment+'-'+chromosome+'-for.txt','w').write(np.array2string(fragmentPositionsFor))
+
     fragmentPositions = np.concatenate((fragmentPositionsFor, fragmentPositionsRev))
     fragmentPositions.sort()
     chrPositionsChunks[chromosome] = fragmentPositions // chunkSize  # Dividing each element by chunk size using numpy syntax
 
+# III. Converting to counts
 counts = segmentstatistics.chunksToCounts(chrPositionsChunks, genome, chunkSize)
 if args.exclude is not None:
     exclude = segmentutils.strToBed(args.exclude, separator=':')
+    segmentstatistics.excludeIntervalFromCounts(counts, exclude, chunkSize)
     if args.verbose:
         print('Setting to zero counts for chunks {}:{}-{}'.format(exclude.chromosome,
               exclude.start // chunkSize, exclude.stop // chunkSize))
-    segmentstatistics.excludeIntervalFromCounts(counts, exclude, chunkSize)
+        print('Corrected total fragments number for chromosome {}: {}'.format(exclude.chromosome, np.sum(counts[exclude.chromosome])))
 
+# III. Converting counts to cytobands
+cytomap = segmentutils.readBedFile(args.cytomap)
 cytoCounts = segmentstatistics.countsToCytomap(cytomap, counts, chunkSize)
 if args.verbose:
     print('Total matches: ', np.sum(cytoCounts))
