@@ -1,6 +1,6 @@
 # This module contains all code related to searching of small fragments in chromosome chunks
 import random
-from collections import defaultdict
+from collections import defaultdict,Counter
 
 try:
     import \
@@ -26,9 +26,9 @@ def makeFragments(segment, fragmentLength):
     :param fragmentSize: sife of fragment to generate
     :return: set of generated fragments
     """
-    fragments = set()
+    fragments = [] # Collecting all fragments with potential duplicates
     for start in range(len(segment) - fragmentLength):
-        fragments.add(segment[start:start + fragmentLength])
+        fragments.append(segment[start:start + fragmentLength])
     return fragments
 
 
@@ -40,12 +40,12 @@ def chooseRandomFragments(segment, fragmentLength, fragmentDensity):
     :param fragmentDensity: density of fragments (see command-line parameters help
     :return: set of generated random fragments
     """
-    fragments = set()
+    fragments = [] # Collecting all fragments with potential duplicates
     fragmentCount = int(len(segment) / fragmentDensity)
     for i in range(fragmentCount):
         begin = random.randrange(len(segment) - fragmentLength)  # random fragment beginning
         end = begin + fragmentLength  # random fragment end
-        fragments.add(segment[begin:end])  # random fragment sequence
+        fragments.append(segment[begin:end])  # random fragment sequence
     return fragments
 
 
@@ -63,14 +63,14 @@ def searchFragments(genome, fragments, verbose=False):
     if verbose:
         print('Making Aho-Corasick automation for {} fragments'.format(len(fragments)))
     A = aho_corasick.Automaton()
-    for idx, key in enumerate(fragments):
+    fragmentsCounter = Counter(fragments) # Converting to counter since Aho-Corasic works only with unique fragments
+    for idx, key in enumerate(fragmentsCounter.keys()): # Adding to automation all uqique fragments
         A.add_word(key, (idx, key))
     A.make_automaton()
-
+    
     if verbose:
         print('Starting Aho-Corasick search for {} fragments'.format(len(fragments)))
     chrFragmentsPositions = {}
-
     for chrId, sequence in genome.items():
         chrFragmentsPositions[chrId] = defaultdict(list)
         if verbose:
@@ -82,6 +82,10 @@ def searchFragments(genome, fragments, verbose=False):
             if verbose and (position // outputInfoChunkLength) > currentInfoChunk:
                 currentInfoChunk = position // outputInfoChunkLength
                 print('Processed chromosome {}, {:8}/{:8} bases'.format(chrId, position, len(sequence)))
+        
+        for fragment in chrFragmentsPositions[chrId]: # Checking for duplicated fragments
+            if fragmentsCounter[fragment] > 1: # Duplicating positions list for each repeated fragment
+                chrFragmentsPositions[chrId][fragment] = chrFragmentsPositions[chrId][fragment] * fragmentsCounter[fragment]
     if verbose:
         print('Aho-Corasick search finished')
     return chrFragmentsPositions
