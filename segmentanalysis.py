@@ -40,6 +40,10 @@ parser.add_argument("-d", "--fragmentdensity", type=float,
                          'For example 5 means that each 5-th letter will be start of fragment')
 parser.add_argument("-c", "--chunk", type=float, default=10.0,
                     help='Chunk size to divide chromosome, in kilobases')
+parser.add_argument("-b", "--blacklist", type=str,
+                    help='Provide file with set of fragments to exclude from calculations')
+parser.add_argument("-f", "--force", action='store_true',
+                    help='Write to existing output data folder. Can overwrite old data')
 parser.add_argument("--nodump", action='store_true',
                     help='Do not save found fragments and positions to files')
 parser.add_argument("--mindumpsize", type=int, default=20,
@@ -75,12 +79,17 @@ chunkSize = int(args.chunk * 1000)
 # 3. Folder to save results
 outputFolder = '{}.{}-{}-{}'.format(args.fastaFileName, segment.chromosome, segment.start, segment.stop)
 if os.path.exists(outputFolder):
-    print('Output folder {} already exists\nPlease delete and resubmit'.format(outputFolder))
-    exit(0)
-os.makedirs(outputFolder)
+    if not args.force:
+        print('Output folder {} already exists\nPlease delete and resubmit'.format(outputFolder))
+        exit(0)
+else:
+    os.makedirs(outputFolder)
 
 if args.cytomap is not None:
     cytomap = segmentutils.readBedFile(args.cytomap)
+
+if args.blacklist is not None:
+    fragmentsBlackList = set(segmentutils.readList(args.blacklist))
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
@@ -96,6 +105,12 @@ for fragmentSize in fragmentSizes:
             fragments = segmentsearch.chooseRandomFragments(segmentSeq, fragmentSize, args.fragmentdensity)
         else:
             fragments = segmentsearch.makeFragments(segmentSeq, fragmentSize)
+        
+        if args.blacklist is not None:
+            oldFragmentsCount = len(fragments)
+            fragments = [fragment for fragment in fragments if not fragment in fragmentsBlackList]
+            if args.verbose:
+                print('Balcklisted {} fragments'.format(oldFragmentsCount - len(fragments)))
 
         # IV. SEARCH OF MATCHING FRAGMENTS
         chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)

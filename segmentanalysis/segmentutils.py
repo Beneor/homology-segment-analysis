@@ -110,6 +110,13 @@ def readFasta(fastaFile):
     genome[chrId] = ''.join(chrSeq).lower()  # Adding to dictionary last readed chromosome
     return genome
 
+def readList(filename):
+    """
+    Reads strings from file and returns it as a list
+    filename: file name to read strings
+    :return: list of strings read from file filename
+    """
+    return [line.strip() for line in open(filename).readlines()]
 
 def dumpFragmentsToFile(fragmentsFileName, fragmentsPositions):
     """
