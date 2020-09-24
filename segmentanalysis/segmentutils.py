@@ -46,6 +46,18 @@ def isContainSubFragments(fragment, substrList):
     # Cycle ended and we haven't found anything
     return False
     
+def isContainFragments(fragment, strList):
+    """
+    Returns True if fragmnet contains at least one substring from substrList
+    :param fragment: fragment sequence
+    :param substrList: list of substrings to search
+    :return: boolean search result
+    """
+    for s1 in strList:
+        if s1 == fragment:
+            return True
+    # Cycle ended and we haven't found anything
+    return False
 
 def segmentStrToGGenomeInterval(segmentStr, genome):
     """

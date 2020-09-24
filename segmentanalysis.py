@@ -42,6 +42,8 @@ parser.add_argument("-c", "--chunk", type=float, default=10.0,
                     help='Chunk size to divide chromosome, in kilobases')
 parser.add_argument("-b", "--blacklist", type=str,
                     help='Provide file with set of fragments to exclude from calculations')
+parser.add_argument("-i", "--include", type=str,
+                    help='Provide file with set of fragments to include into calculations')
 parser.add_argument("-f", "--force", action='store_true',
                     help='Write to existing output data folder. Can overwrite old data')
 parser.add_argument("--nodump", action='store_true',
@@ -90,6 +92,9 @@ if args.cytomap is not None:
 
 if args.blacklist is not None:
     fragmentsBlackList = set(segmentutils.readList(args.blacklist))
+    
+if args.include is not None:
+    fragmentsIncludeList = set(segmentutils.readList(args.include))
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
@@ -106,18 +111,25 @@ for fragmentSize in fragmentSizes:
         else:
             fragments = segmentsearch.makeFragments(segmentSeq, fragmentSize)
         
-        if args.blacklist is not None:
-            oldFragmentsCount = len(fragments)
-            fragments = [fr for fr in fragments if not segmentutils.isContainSubFragments(fr, fragmentsBlackList)]
-            if args.verbose:
-                print('Balcklisted {} fragments'.format(oldFragmentsCount - len(fragments)))
+        if args.include is not None:
+            if args.blacklist is not None:
+                oldFragmentsCount = len(fragments)
+                fragments = [fr for fr in fragments if not (segmentutils.isContainSubFragments(fr, fragmentsBlackList) and not segmentutils.isContainSubFragments(fr, fragmentsIncludeList))]
+                if args.verbose:
+                    print('Balcklisted and included {} fragments'.format(oldFragmentsCount - len(fragments)))
+        else:
+            if args.blacklist is not None:
+                oldFragmentsCount = len(fragments)
+                fragments = [fr for fr in fragments if not segmentutils.isContainSubFragments(fr, fragmentsBlackList)]
+                if args.verbose:
+                    print('Balcklisted and included {} fragments'.format(oldFragmentsCount - len(fragments)))
 
         # IV. SEARCH OF MATCHING FRAGMENTS
         chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
         if not args.nodump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print('Dumping fragments to text file')
-            fragmentsFileName = '{}/fragments.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
+            fragmentsFileName = '{}/fragments.l{:02d}-{}-{}.txt'.format(outputFolder, fragmentSize, segment.start, direction)
             segmentutils.dumpFragmentsToFile(fragmentsFileName, chrFragmentsPositions)
         # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
@@ -133,7 +145,7 @@ for fragmentSize in fragmentSizes:
         normalizedCounts[direction] = segmentstatistics.normalizeCounts(counts)
         if args.verbose:
             print('Dumping normalized counts')
-        countsFileName = '{}/ncounts.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
+        countsFileName = '{}/ncounts.l{:02d}-{}-{}.txt'.format(outputFolder, fragmentSize, segment.start, direction,)
         segmentutils.dumpNCounts(countsFileName, normalizedCounts[direction], chunkSize)
 
         # VI. GROUPING BY CYTOBANDS
@@ -142,16 +154,17 @@ for fragmentSize in fragmentSizes:
                 print('Grouping counts by cytomap regions')
             cytomapCounts[direction] = segmentstatistics.countsToCytomap(cytomap,
                                                                          normalizedCounts[direction], chunkSize)
-            cytoCountsFileName = '{}/cytocounts.l{:02d}-{}.txt'.format(outputFolder, fragmentSize, direction)
+            cytoCountsFileName = '{}/cytocounts.l{:02d}-{}-{}.txt'.format(outputFolder, fragmentSize, segment.start, direction)
             segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])
 
     # Outputting merged counts
-    nCountsMergedFileName = '{}/ncounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+    nCountsMergedFileName = '{}/ncounts.l{:02d}-{}-merged.txt'.format(outputFolder,fragmentSize,segment.start)
+    #Corrected filename!!!!
     mergedCounts = {
         chromosome: (normalizedCounts['dir'][chromosome] + normalizedCounts['rev'][chromosome]) / 2
         for chromosome in normalizedCounts['dir'].keys()}
     segmentutils.dumpNCounts(nCountsMergedFileName, mergedCounts, chunkSize)
     if args.cytomap is not None:
-        cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-merged.txt'.format(outputFolder, fragmentSize)
+        cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-{}-merged.txt'.format(outputFolder, fragmentSize,segment.start)
         mergedCytoCounts = (cytomapCounts['dir'] + cytomapCounts['rev']) / 2
         segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)

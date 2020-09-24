@@ -91,6 +91,8 @@ if args.chromosomes is not None:
     homology = {key: value for key, value in homology.items() if key in chrSet}
 
 ectopics = readEctopics(args.ectopicsFileName) if args.ectopicsFileName else None
+#print(args.homologyFileName)
+#print(args.ectopicsFileName)
 
 # Grating subgraphs
 nChromosomes = len(homology.keys())
@@ -144,3 +146,4 @@ if args.savefig:
     plt.savefig(args.savefig)
 else:
     plt.show()
+
