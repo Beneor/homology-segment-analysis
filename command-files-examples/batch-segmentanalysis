@@ -1,0 +1,4 @@
+#!/bin/bash
+./segmentanalysis.py -v -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:103614:408582 examples/DmelMapTable.160615c.bed
+./segmentanalysis.py -v -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:408583:660483 examples/DmelMapTable.160615c.bed
+./segmentanalysis.py -v -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:660484:831096 examples/DmelMapTable.160615c.bed

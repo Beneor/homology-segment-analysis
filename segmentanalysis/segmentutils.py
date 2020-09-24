@@ -33,6 +33,19 @@ def strToBed(line, separator='\t'):
     value = fields[4] if len(fields) > 4 else None
     return GenomeInterval(chromosome, start, stop, intervalID, value)
 
+def isContainSubFragments(fragment, substrList):
+    """
+    Returns True if fragmnet contains at least one substring from substrList
+    :param fragment: fragment sequence
+    :param substrList: list of substrings to search
+    :return: boolean search result
+    """
+    for s in substrList:
+        if s in fragment:
+            return True
+    # Cycle ended and we haven't found anything
+    return False
+    
 
 def segmentStrToGGenomeInterval(segmentStr, genome):
     """

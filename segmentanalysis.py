@@ -108,7 +108,7 @@ for fragmentSize in fragmentSizes:
         
         if args.blacklist is not None:
             oldFragmentsCount = len(fragments)
-            fragments = [fragment for fragment in fragments if not fragment in fragmentsBlackList]
+            fragments = [fr for fr in fragments if not segmentutils.isContainSubFragments(fr, fragmentsBlackList)]
             if args.verbose:
                 print('Balcklisted {} fragments'.format(oldFragmentsCount - len(fragments)))
 

@@ -1,0 +1,2 @@
+#!/bin/bash
+./genomecorrelation.py -m -c X examples/Cytocountsdata/discs/all/l30-cytocounts/11.txt examples/Xectopicsdata/CS/discs/11.csv
