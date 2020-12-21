@@ -47,6 +47,7 @@ for t in an.parcomb(n=4,dic=pardicts):
     an.statmw(*t,*t,x='Correlations',u=True)
 for f in glob.glob('*'+'.xls'):
     an.shutil.move(f,resultdir)
+    
 
 # 2.2. Mann-Whitney U analysis of correlations for the same fragment lengths with one different chief parameter.
 resultdir='./MW-analysis/diff-parameters'
@@ -58,10 +59,10 @@ for t in an.parcombmdiff(n=4,dic=pardicts,v=1):
 for f in glob.glob('*'+'.xls'):
     shutil.move(f,resultdir)
     
-"""# 2.3. Mann-Whitney U analysis of correlations in the same strains for different fragment lengths for nearest discs
+'''# 2.3. Mann-Whitney U analysis of correlations in the same strains for different fragment lengths for nearest discs
 resultdir='./MW-analysis/nearest'
 os.mkdir(resultdir) 
 for t in parcomb(n=4,dic=pardicts,m=1):
     an.statmw(*t,*t,x='Nearest',u=True)
 for f in glob.glob('*'+'.xls'):
-    shutil.move(f,resultdir)"""
+    shutil.move(f,resultdir)'''

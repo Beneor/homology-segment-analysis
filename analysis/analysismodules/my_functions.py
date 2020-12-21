@@ -3,9 +3,11 @@
 import glob
 import os
 from scipy.stats.stats import spearmanr
+from scipy.stats import chi2_contingency
 from scipy import stats
 import shutil
 import math
+import numpy as np
 
 # Accessory fuctions used for analysis of Homology Segment Analysis results
 
@@ -50,13 +52,16 @@ def averagecorr(fragname,length,s):
                     v+=1 #Number of significant correlations
                     j+=cor
                     discsignlist.append(dsk)
-        corsterr=str(round(stats.sem(corsigniflist),3))  #Correlations standard error calculations
-        probsterr=str(round(stats.sem(probsigniflist),3))  #Probabilities standard error calculations     
+        corsterr=str(round(stats.sem(corsigniflist),3)) #Correlations standard error calculations
+        pnum = len(probsigniflist) #Number of p <0.05
         h=n-e #Total number of correlations
         if h!=0:
-            a1= v/h # The percentage of significant correlations
+            a1= v/h # The share of significant correlations
+            proberror = ((a1*(1-a1))/h)**0.5 # Error of probability proportion
         else:
             a1=0
+            proberror = 1
+        probsterr=str(round(proberror,3))  #Probabilities error calculations
         if v!=0:
             avcor = str(round((j/v),3))
         else:
@@ -166,34 +171,38 @@ def mannwhitney(path1,path2,u,name1,name2,x,ex):
         """ Returns dictionary containing filenames as keys and lists of discs (c,d) with Spearman correlation rho coefficients and probabilities. Also checks the arranged list of keys (e)"""
         c={} #Dictionary for filenames (keys) and lists of rho values)
         d={} #Dictionary for filenames (keys) and lists of p values)
+        n={} #Dictionary for filenames (keys) and total number of examples
         e=[] #List for the arranged keys in c and d 
         for filename in glob.glob(os.path.join(a,b)):
             f1 = open(filename,'r')
             fn=filename[filename.rfind('/')+1:filename.rfind('-')] #File number
             a=[]
             b=[]
+            ntot=0
             for line in f1:
                 x=str(line)
                 if 'nan' in x:
                     continue
+                ntot+=1
                 prob=float(x[x.rfind('\t')+1:].strip())
                 if x.count('\t')==2:
                     cor=float(x[x.find('\t')+1:x.rfind('\t')])
                 elif x.count('\t')==3:
                     cor0=x[:x.rfind('\t')]
                     cor=float(cor0[cor0.rfind('\t')+1:].strip())
-                a.append(cor)
-                b.append(prob)
+                if prob < 0.05:
+                    a.append(cor)
+                    b.append(prob)
             c[fn]=a #correlation value
             d[fn]=b #correlation probability
+            n[fn] = ntot #total number of examples
             e.append(fn)
             f1.close()
         e.sort()
-        return c, d, e
+        return c,d,e,n
+    c1,c2,e,ntot1 = voc(a=path1,b=ex) #correlation, probability, length and totul number values for file 1
+    d1,d2,g,ntot2 = voc(a=path2,b=ex) #correlation, probability, length and totul number values for file 2
     
-    c1,c2,e = voc(a=path1,b=ex)
-    d1,d2,g = voc(a=path2,b=ex)
-
     for k in range(len(e)):
         w1=[]
         i=e[k]
@@ -205,10 +214,12 @@ def mannwhitney(path1,path2,u,name1,name2,x,ex):
             else:
                 if i!=j:
                     continue
-            cor1=c1[i] 
-            cor2=d1[j]
-            prob1=c2[i]
-            prob2=d2[j]
+            tot1 = ntot1[i] #Total number of correlations in file 1
+            tot2 = ntot2[j] #Total number of correlations in file 2
+            cor1=c1[i] # list of correlations 1
+            cor2=d1[j] # list of correlations 2
+            prob1=c2[i] #list of probabilities 1
+            prob2=d2[j] #list of probabilities 2
             corv,corp = stats.mannwhitneyu(cor1,cor2,alternative='two-sided') #Two sided Mann-Whitney U test
             c1v,c1p =stats.shapiro(cor1)
             c2v,c2p =stats.shapiro(cor2)
@@ -231,9 +242,12 @@ def mannwhitney(path1,path2,u,name1,name2,x,ex):
                 probdist2='not-norm'
             else:
                 probdist2='norm'
-            probv,probp = stats.mannwhitneyu(prob1,prob2,alternative='two-sided')
+            num1 = len(prob1)
+            num2 = len(prob2)
+            proportions = [[num1,tot1],[num2,tot2]] #non-zero probabilites for chi-square test
+            probv,probability,xadd,yadd = chi2_contingency(proportions, correction = False)
             corp1=round(corp,3) #Mann-Whitney U test; p value for rho correlations comparision 
-            probp1=round(probp,3) #Mann-Whitney U test; p value for rho probabilities comparision
+            probp1=round(probability,3) #Chi-square test; p value for rho probabilities comparision
             if corp1 <0.05 or probp1 <0.05:
                 result.write('%s\t%s\t%f\t%f\t%s\t%s\t%s\t%s\n'%(i,j,corp1,probp1,cordist1,cordist2,probdist1,probdist2))
     result.close()
