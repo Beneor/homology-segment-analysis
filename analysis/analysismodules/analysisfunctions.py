@@ -56,7 +56,7 @@ def correlation(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='
     movefiles(fragname,x)
         
 def neardicscor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
-    """Calculates specific and unspecific correlation for fragment and ectopic frequencies"""
+    """Calculates specific correlation for fragment and ectopic frequencies"""
     namelist=[strain,areas,fragments,corr] #Generation folder name
     fragname=m.pathgenerator(namelist,'-')
     dirsgen(fragname,x)
@@ -69,13 +69,63 @@ def neardicscor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='
             fragdir+=('/l'+str(length)+'nr-cytocounts')
         ectlist=[ectopicsdir,strain,areas] # Generation of the path to ectopic frequencies files:
         ectdir=m.pathgenerator(ectlist,'/')
-        for n in range(10,100):
-            m.nearest(n,length,fragdir,ectdir)
-        m.averagecorr(fragname,length,s='.csv2')
-    m.removefiles('l-analysis-discs')
-    movefiles(fragname,x)
+        result = open(str(length)+'-nearest-av-specific.xls','w')
+        result.write('%s\t%s\t%s\n'%('area','average_correlation','average_share'))
+        for n in range(10,117):
+            avrholist, avproblist = m.nearest(n,length,fragdir,ectdir)
+            if len(avrholist) !=0:
+                avrho = sum(avrholist)/float(len(avrholist))#The average rho value for len(l1)-n chromosomal parts and n discs
+            else:
+                avrho = 0
+            if len(avproblist) !=0:
+                avpnum = sum(avproblist)/float(len(avproblist))#THe average rho value for len(l1)-n chromosomal parts and n discs
+            else:
+                avpnum = 0
+            result.write('%s\t%f\t%f\n'%(n,round(avrho,3), round(avpnum,3)))
+        result.close()
+        m.removefiles('l-analysis-discs')
+        subd = x+fragname+'/Archive/'+str(length) 
+        os.mkdir(subd)
+        for f in glob.glob('*'+'.csv2'):
+            shutil.move(f,subd)
+        movefiles(fragname,x)
     
-def statmw(strain1,areas1,fragments1,corr1,strain2,areas2,fragments2,corr2,x,u): 
+def neardicsunspecifcor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
+    """Calculates unspecific correlation for fragment and ectopic frequencies"""
+    namelist=[strain,areas,fragments,corr] #Generation folder name
+    fragname=m.pathgenerator(namelist,'-')
+    dirsgen(fragname,x)
+    for length in lengths:
+        fragmlist=[fragmentsdir,areas,fragments] # Generation of the path to fragments frequencies files:
+        fragdir=m.pathgenerator(fragmlist,'/')
+        if fragments=='all': 
+            fragdir+=('/l'+str(length)+'-cytocounts')
+        elif fragments=='nr': 
+            fragdir+=('/l'+str(length)+'nr-cytocounts')
+        ectlist=[ectopicsdir,strain,areas] # Generation of the path to ectopic frequencies files:
+        ectdir=m.pathgenerator(ectlist,'/')
+        result = open(str(length)+'-nearest-av-unspecific.xls','w')
+        result.write('%s\t%s\t%s\n'%('area','average_correlation','average_share'))
+        for n in range(10,117):
+            avrholist, avproblist = m.nearestunspecifcor(n,length,fragdir,ectdir)
+            if len(avrholist) !=0:
+                avrho = sum(avrholist)/float(len(avrholist))#THe average rho value for len(l1)-n chromosomal parts and n discs
+            else:
+                avrho = 0
+            if len(avproblist) !=0:
+                avpnum = sum(avproblist)/float(len(avproblist))#THe average rho value for len(l1)-n chromosomal parts and n discs
+            else:
+                avpnum = 0
+            result.write('%s\t%f\t%f\n'%(n,round(avrho,3), round(avpnum,3)))
+        result.close()
+        m.removefiles('l-analysis-discs')
+        subd = x+fragname+'/Archive/'+str(length) 
+        os.mkdir(subd)
+        for f in glob.glob('*'+'.csv2'):
+            shutil.move(f,subd)
+        movefiles(fragname,x)
+    
+def nearestcompare(strain1,areas1,fragments1,corr1,strain2,areas2,fragments2,corr2,n,x): 
     """Mann Whitney U statistics calculation"""
     namelist1=[strain1,areas1,fragments1,corr1]
     name1=m.pathgenerator(namelist1,'-') #The name of file1
@@ -85,13 +135,13 @@ def statmw(strain1,areas1,fragments1,corr1,strain2,areas2,fragments2,corr2,x,u):
     for root, dirs, files in os.walk(x):
         for dir_name in dirs:
             if name1 in dir_name:
-                path1 = './'+x+'/'+name1+'/Archive' #x - the main directory containing files for analysis; name1 - the name of the directiry containing files set 1
+                path1 = './'+x+'/'+name1+'/Archive/'+str(n) #x - the main directory containing files for analysis; name1 - the name of the directiry containing files set 1
     for root, dirs, files in os.walk(x):
         for dir_name in dirs:
             if name2 in dir_name:
-                path2 = './'+x+'/'+name2+'/Archive' #name2 - the name of the directiry containing files set 1
+                path2 = './'+x+'/'+name2+'/Archive/'+str(n) #name2 - the name of the directiry containing files set 1
                 os.listdir(path2)
-    m.mannwhitney(path1,path2,u,name1,name2,x,ex='*.csv2') #u is True if name1==name2
+    m.nearestavcomp(path1,path2,name1,name2,n,x,ex='*-nearest.csv2') #u is True if name1==name2
 
 def parcomb(n,dic):
     """Generates combinations of n parameters for analysis"""
@@ -141,3 +191,41 @@ def parcombmdiff(n,dic,v=1):
         x=k[0]+k[1]
         t=tuple(x)
         yield(t)
+        
+def probcompare(strain1,areas1,fragments1,corr1,strain2,areas2,fragments2,corr2,x,u):
+    """Mann Whitney U statistics calculation"""
+    namelist1=[strain1,areas1,fragments1,corr1]
+    name1=m.pathgenerator(namelist1,'-') #The name of file1
+    namelist2=[strain2,areas2,fragments2,corr2]
+    name2=m.pathgenerator(namelist2,'-') #The name of file1
+    
+    for root, dirs, files in os.walk(x):
+        for dir_name in dirs:
+            if name1 in dir_name:
+                path1 = './'+x+'/'+name1+'/Archive' #x - the main directory containing files for analysis; name1 - the name of the directiry containing files set 1
+    for root, dirs, files in os.walk(x):
+        for dir_name in dirs:
+            if name2 in dir_name:
+                path2 = './'+x+'/'+name2+'/Archive' #name2 - the name of the directiry containing files set 1
+                os.listdir(path2)
+    m.probcomp(path1,path2,name1,name2,x,ex='*.csv2') #u is True if name1==name2
+
+    
+def statmw(strain1,areas1,fragments1,corr1,strain2,areas2,fragments2,corr2,x,u): 
+    """Mann Whitney U statistics calculation"""
+    namelist1=[strain1,areas1,fragments1,corr1]
+    name1=m.pathgenerator(namelist1,'-') #The name of file1
+    namelist2=[strain2,areas2,fragments2,corr2]
+    name2=m.pathgenerator(namelist2,'-') #The name of file1
+    
+    for root, dirs, files in os.walk(x):
+        for dir_name in dirs:
+            if name1 in dir_name:
+                path1 = './'+x+'/'+name1+'/Archive' #x - the main directory containing files for analysis; name1 - the name of the directiry containing files set 1
+    for root, dirs, files in os.walk(x):
+        for dir_name in dirs:
+            if name2 in dir_name:
+                path2 = './'+x+'/'+name2+'/Archive' #name2 - the name of the directiry containing files set 1
+                os.listdir(path2)
+    m.mannwhitney(path1,path2,u,name1,name2,x,ex='*.csv2') #u is True if name1==name2
+

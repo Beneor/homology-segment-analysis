@@ -34,7 +34,12 @@ for t in an.parcomb(n=4,dic=pardicts):
         continue
     if 'unspecific' in t:
         continue
-    an.neardicscor(*t,lengths=lengthstuple1,fragmentsdir=frd,ectopicsdir=ectd)
+    if 'all' in t:
+        continue
+    if 'specific' in t:
+        an.neardicscor (*t,lengths=lengthstuple1,fragmentsdir=frd,ectopicsdir=ectd)
+    if 'unspecific' in t:
+        an.neardicsunspecifcor(*t,lengths=lengthstuple1,fragmentsdir=frd,ectopicsdir=ectd)
     
 # 2. Mann-Whitney statistical analysis of difference between correlation values and probabilities
 
@@ -59,10 +64,15 @@ for t in an.parcombmdiff(n=4,dic=pardicts,v=1):
 for f in glob.glob('*'+'.xls'):
     shutil.move(f,resultdir)
     
-'''# 2.3. Mann-Whitney U analysis of correlations in the same strains for different fragment lengths for nearest discs
+# 2.3. Mann-Whitney U analysis of correlations in the same strains for different fragment lengths for nearest discs
 resultdir='./MW-analysis/nearest'
 os.mkdir(resultdir) 
-for t in parcomb(n=4,dic=pardicts,m=1):
-    an.statmw(*t,*t,x='Nearest',u=True)
-for f in glob.glob('*'+'.xls'):
-    shutil.move(f,resultdir)'''
+for t in an.parcombmdiff(n=4,dic=pardicts,v=1):
+    if 'zones' in t:
+        continue    #Excluding data for zones from analysis
+    if 'all' in t:
+        continue
+    for n in lengthstuple2:
+        an.nearestcompare(*t,n,x='Nearest')
+    for f in glob.glob('*'+'.xls'):
+        shutil.move(f,resultdir)

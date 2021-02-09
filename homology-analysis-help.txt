@@ -1,0 +1,5 @@
+
+./segmentanalysis.py -s 30 -v examples/dm6.nounmapped.fa.gz examples/S-LIMK1.fa:S-LIMK1 examples/DmelMapTable.160615c.bed
+./genomecorrelation.py examples/dm6.nounmapped.fa.gz.S-LIMK1-0-1734/cytocounts.l30-merged.txt 
+
+./segmentanalysis.py -s 30,40 -v examples/dm6.nounmapped.fa.gz :X:11982050:12772070 examples/DmelMapTable.160615c.bed
