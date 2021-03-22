@@ -51,11 +51,9 @@ def correlation(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='
     if corr=='unspecific':
         for length in lengths:
             m.disccount(length) #Disc pairs with significant unspecific correlation arranged according to numbers of correlations
-    if corr =='specific':
-        m.removefiles('l-analysis-discs')
     movefiles(fragname,x)
         
-def neardicscor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
+def neardisccor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
     """Calculates specific correlation for fragment and ectopic frequencies"""
     namelist=[strain,areas,fragments,corr] #Generation folder name
     fragname=m.pathgenerator(namelist,'-')
@@ -90,7 +88,7 @@ def neardicscor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='
             shutil.move(f,subd)
         movefiles(fragname,x)
     
-def neardicsunspecifcor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
+def neardiscunspecifcor(strain,areas,fragments,corr,lengths,fragmentsdir,ectopicsdir,x='./Nearest/'):
     """Calculates unspecific correlation for fragment and ectopic frequencies"""
     namelist=[strain,areas,fragments,corr] #Generation folder name
     fragname=m.pathgenerator(namelist,'-')

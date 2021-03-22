@@ -4,6 +4,12 @@ import glob
 import os
 import shutil
 
+programDescription = '''
+! Place this script into the folder examples (if absent) and run it in that folder using Python3. 
+
+This script arranges files produced by segmentanalysis in folder 'examples', placing them to folder Cytocountsdata: fragments for bands or zones: 'discs' or 'zones' folder; fragments without and with exclusion of DNA repeats: 'all' or 'nr' folder; fragments sequences or fragments frequencies  - 'l*-fragments' or 'l*-cytocounts' folder, accodring to fragments length *.
+'''
+
 a=input('Enter chromosomal areas, discs or zones: ')
 b= input('Enter fragments, all or nr: ')
 path='./'+a+'/'+b

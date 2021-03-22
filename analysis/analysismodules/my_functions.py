@@ -79,7 +79,7 @@ def averagecorr(fragname,length,s):
         result.write('%s\t%s\n'%(i,corvoc[i]))
     result.close()
     for i in listdiscs:
-        resultdiscs=open(str(i)+'l-analysis-discs','w') #File containing discs with significant correlations
+        resultdiscs=open(str(i)+'l-analysis-discs.csv4','w') #File containing discs with significant correlations
         for j in discvoc[i]:
             resultdiscs.write('%s\t%s\n'%(i,j))
     resultdiscs.close()
@@ -187,7 +187,7 @@ def disccount(length):
     """Returns disc pairs with significant unspecific Spearman correlation"""
     a=[]
     b=[]
-    file1=open(str(length)+'l-analysis-discs','r')
+    file1=open(str(length)+'l-analysis-discs.csv4','r')
     file2=open(str(length)+'l-discpairs-unspecific-counts.csv3','w')
     for line in file1:
         x = str(line)
