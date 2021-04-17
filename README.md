@@ -1,19 +1,14 @@
 
 # Homology segment analysis
 
-This application analyses homology level of particular sequences (can be some dedicated sequence with a genome or 2D genome-genome homology), 
-plot homology level graph 
-and calculated correlation between homology level any some genome-related data (for example, ectopic contacts). 
-Resulting data are grouped by genome intervals (chunks) and by cytobands (if cytoband data is available)
+The application calculates sequence homology level using short fragment matches 
+and identifies correlations between sequence homology regions and any other genome data (for example frequency of ectopic contacts) 
 
-First script `segmentanalysis.py` splits segment into set of short (20 - 40 kb) fragments,
-then splits chromosome into a set of long (10 kb by default) chunks, and seeks for positions where these fragments match with the genome.
-Then it computes frequencies of occurrence for segments within a chromosome,
-makes table of the match frequencies normalized by chunks, and calculates fragments matching frequency by cytobands, 
-if cytoband information is provided.
-
-Second script `genomecorrelation.py` plots homology level graphs (both grouped by chunks or by cytobands),
-and calculated correlation of homology level with experimental data, if provided.
+The software capabilities
+* Calculate homology level between provided sequence with a genome
+* Calculate a correlation between homology level any numeric data specified for genome (for example, ectopic contacts)
+* Plot homology level graph
+* Build 2D genome-genome homology level heatmap (TBD).  
 
 ## Licence
 This program is licensed under GNU GPLv3 licence: https://www.gnu.org/licenses/gpl.html
@@ -64,19 +59,18 @@ Then navigate to program base folder, and start using it.
 
 # Usage
 
-## Homology calculation using segmentanalysis.py 
+## Calculate homology between provided sequence and genome
 
-### Main arguments
 General run syntax is following: 
 
 `segmentanalysis.py <options> chromosomeseq segment [cytobands]`
 
+### Main arguments
 The main arguments are
 
 +  `fastaFileName` -      FASTA file (may be gzipped) containing genome sequence                      
 +  `segment` -              segment of chromosome to analyze: file and location. See format notes below.
-+  `cytobands` - optional BED-format file containing locations of cytobands.
-Or any other intervals to group homology data 
++  `cytobands` - optional BED-format file containing locations of cytobands or any other intervals to group homology data. 
 
 #### Segment notation
 **segment** option has a flexible format to handle multiple cases. 
@@ -142,3 +136,14 @@ User can run this test by executing *runtest.sh* script:
 `./runtest.sh`
 
 
+
+Resulting data are grouped by genome intervals (chunks) and by cytobands (if cytoband data is available)
+
+First script `segmentanalysis.py` splits segment into set of short (20 - 40 kb) fragments,
+then splits chromosome into a set of long (10 kb by default) chunks, and seeks for positions where these fragments match with the genome.
+Then it computes frequencies of occurrence for segments within a chromosome,
+makes table of the match frequencies normalized by chunks, and calculates fragments matching frequency by cytobands, 
+if cytoband information is provided.
+
+Second script `genomecorrelation.py` plots homology level graphs (both grouped by chunks or by cytobands),
+and calculated correlation of homology level with experimental data, if provided.
