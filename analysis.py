@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import analysismodules.analysisfunctions as an
+import segmentanalysis.analysisfunctions as an
 import os, shutil
 import glob
 import argparse
@@ -14,9 +14,9 @@ The Aho-corasick runs for Filesmodification.py should be prepared by the shell s
 # 0. ANALYZING INPUT PARAMETERS
 parser = argparse.ArgumentParser(description=programDescription, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("fmfGenome", type=str,
-                    help="Frequency of matching fragments (FMF)", default="../examples/Cytocountsdata", nargs='?')
+                    help="Frequency of matching fragments (FMF)", default="./examples/Cytocountsdata", nargs='?')
 parser.add_argument("ectopicsData", type=str,
-                    help="Input folder with ectopics data", default="../examples/Xectopicsdata", nargs='?')
+                    help="Input folder with ectopics data", default="./examples/Xectopicsdata", nargs='?')
 
 parser.add_argument("outDir", type=str, help="Directory to write results WARNING: Currently not implemented. Please don't use", default=".", nargs='?')
 parser.add_argument("strain1", type=str, help="First strain to analyse. Must be the same as in folder with ectopics data", default="CS", nargs='?')
@@ -30,10 +30,10 @@ parser.add_argument("-N",  "--nearest", action='store_true',
 
 args = parser.parse_args()
 
-frd = args.fmfGenome
+frd = args.fmfGenome # fragmentsdir
+ectd = args.ectopicsData  # ectopicsdir
 
-ectd = args.ectopicsData  #
-lengthstuple1 =  tuple([int(size) for size in args.fragmentsizes.split(',')])
+lengthstuple1 = tuple([int(size) for size in args.fragmentsizes.split(',')])
 
 strain1 = args.strain1  # names of strains for Xectopicsdata
 strain2 = args.strain2  #
@@ -62,7 +62,7 @@ for t in an.parcomb(n=4, dic=pardicts):
 
 os.mkdir(os.path.join(args.outDir, 'MW-analysis'))
 # 1.2.1. Mann-Whitney U analysis of correlations for the data sets with the same chief parameters (different fragment lengths) 
-resultdir = './MW-analysis/diff-lengths'
+resultdir = os.path.join(args.outDir, 'MW-analysis', 'diff-lengths')
 os.mkdir(resultdir)
 for t in an.parcomb(n=4, dic=pardicts):
     if 'zones' in t:  # Excluding data for zones from analysis

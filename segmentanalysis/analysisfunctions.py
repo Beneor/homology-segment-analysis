@@ -2,7 +2,7 @@
 
 # Fuctions used for analysis of Homology Segment Analysis results
 
-import analysismodules.my_functions as m
+import segmentanalysis.my_functions as m
 import os, shutil
 import glob
 import copy
