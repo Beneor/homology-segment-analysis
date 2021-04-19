@@ -30,12 +30,13 @@ However, the application was not tested on Mac.
 
 ## Creating Conda environment
 Execute following commands from your shell
-* `conda create --name py3 python=3.8`
-* `conda activate py3`
-* `conda config --add channels conda-forge`
-* `conda config --add channels bioconda`
-* `conda update --all`
-* `conda install numpy scipy matplotlib pandas pyahocorasick`
+
+    conda create --name py3 python=3.8
+    conda activate py3
+    conda config --add channels conda-forge
+    conda config --add channels bioconda
+    conda update --all
+    conda install numpy scipy matplotlib pandas pyahocorasick
 
 ### Windows users note
 If installation of pyahocorasick module fails, try to install Visual Studio build tools from here: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
@@ -46,8 +47,9 @@ So Linux users instead of Anaconda package can install all required packages
 via distribution package manager and python pip.
 
 Example for Ubuntu/Debian:
-* `sudo apt install build-essential python3-dev`
-* `pip3 install numpy scipy matplotlib pandas pyahocorasick`
+
+    sudo apt install build-essential python3-dev
+    pip3 install numpy scipy matplotlib pandas pyahocorasick
 
 
 ## Main program installation
@@ -55,7 +57,7 @@ Just checkout from master branch.
 
 `git clone https://bitbucket.org/beneor/homology-segment-analysis.git`
 
-Then navigate to program base folder, and start using it.
+Then navigate to program base folder, and start using.
 
 # Usage
 
