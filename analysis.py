@@ -18,7 +18,7 @@ parser.add_argument("fmfGenome", type=str,
 parser.add_argument("ectopicsData", type=str,
                     help="Input folder with ectopics data", default="./examples/Xectopicsdata", nargs='?')
 
-parser.add_argument("outDir", type=str, help="Directory to write results WARNING: Currently not implemented. Please don't use", default=".", nargs='?')
+#parser.add_argument("outDir", type=str, help="Directory to write results WARNING: Currently not implemented. Please don't use", default=".", nargs='?')
 parser.add_argument("strain1", type=str, help="First strain to analyse. Must be the same as in folder with ectopics data", default="CS", nargs='?')
 parser.add_argument("strain2", type=str, help="Second strain to analyse. Must be the same as in folder with ectopics data", default="agn", nargs='?')
 

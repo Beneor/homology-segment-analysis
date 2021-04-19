@@ -2,13 +2,13 @@
 # Homology segment analysis
 
 The application calculates sequence homology level using short fragment matches 
-and identifies correlations between sequence homology regions and any other genome data (for example frequency of ectopic contacts) 
+and identifies correlations between frequency of matched fragments (FMF) and any other genome data (for example frequency of ectopic contacts, FEC) 
 
 The software capabilities
 * Calculate homology level between provided sequence with a genome
-* Calculate a correlation between homology level any numeric data specified for genome (for example, ectopic contacts)
-* Plot homology level graph
-* Build 2D genome-genome homology level heatmap (TBD).  
+* Calculate a correlation between homology level any numeric data specified for genome (for example FEC)
+* Plot homology level graph 
+* Analyse full-chromosomee correlations between FMF and any other genome data (for example FEC)  
 
 ## Licence
 This program is licensed under GNU GPLv3 licence: https://www.gnu.org/licenses/gpl.html
@@ -35,19 +35,19 @@ Execute following commands from your shell
 * `conda config --add channels conda-forge`
 * `conda config --add channels bioconda`
 * `conda update --all`
-* `conda install numpy scipy matplotlib`
-* `conda install pyahocorasick`
+* `conda install numpy scipy matplotlib pandas pyahocorasick`
 
 ### Windows users note
 If installation of pyahocorasick module fails, try to install Visual Studio build tools from here: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
 
 ### Linux users note
 All Linux distributions contains Python3 by default. 
-So Linux users instead of Anaconda package can install all required packages via distribution package manager and python pip
+So Linux users instead of Anaconda package can install all required packages 
+via distribution package manager and python pip.
 
 Example for Ubuntu/Debian:
 * `sudo apt install build-essential python3-dev`
-* `pip3 install numpy scipy matplotlib pyahocorasick`
+* `pip3 install numpy scipy matplotlib pandas pyahocorasick`
 
 
 ## Main program installation
@@ -59,7 +59,15 @@ Then navigate to program base folder, and start using it.
 
 # Usage
 
-## Calculate homology between provided sequence and genome
+## Calculate homology between provided sequence and genome using segmentanalysis.py
+
+The `segmentanalysis.py` script splits segment into set of short (20 - 40 kb) fragments,
+then splits chromosome into a set of long (10 kb by default) chunks, and seeks for positions where these fragments match with the genome.
+Then it computes frequencies of occurrence for segments within a chromosome,
+makes table of the match frequencies normalized by chunks, and calculates fragments matching frequency by cytobands, 
+if cytoband information is provided.
+
+Resulting data are grouped by genome intervals (chunks) and by cytobands (if cytoband data is available)
 
 General run syntax is following: 
 
@@ -102,6 +110,9 @@ Start and stop locations also can be omitted to use whole FASTA record.
 
 ## Homology graph plotting using genomecorrelation.py 
 
+Second script `genomecorrelation.py` plots homology level graphs (both grouped by chunks or by cytobands),
+and calculated correlation of homology level with experimental data, if provided.
+
 General run syntax is following: 
 
 `genomecorrelation.py <options> homologyFileName [ectopicsFileName]` 
@@ -122,28 +133,85 @@ The main arguments are
 + `-x, --xinterval` - Interval to put ticks on X-axis, in kilobases
 + `-s, --savefig` -   File name to save resulting picture
 
+## Full-chromosome correlation analysis using analysis.py 
+
+The script `analysis.py` analyses full-chromosomee correlations between FMF and any other genome data (for example FEC).
+It includes Spearman rho correlation (R) for specific and unspecific matches, combining data and graphs plotting.
+
+The part of the application is currently not refactored, so using it is not so convenient as other scripts
+Additional_scripts
+General run syntax is following: 
+`analysis.py analysis.py <cytocountsData> <Xectopicsdata> [--nearest]` 
+
+The main arguments are
+
++ `cytocountsData` - Folder containing pre-calculated data with cytocounts.
++ `Xectopicsdata` - optional tab-delimeted file containing ectopic contacts data
+
+### Optional arguments
++ `strain1` - Name of the first strain to analyse. Default: CS
++ `strain2` - Name of the second strain to analyse. Default: agn
++ `-h, --help` -     Show help message and exit
++ `-s, --fragmentsizes` -- Set of fragment sizes to search. Default: CS,agn
++ `-N,  --nearest` - Perform nearest calculations. Default: No
+
+### Data preparation
+#### Cytocounts FMF data
+The pre-calculated matrix of FMF should be built manually before running `analysis.py` script. 
+To do this, user should first pre-calculate correlations fo different regions of the chromosome using bash script
+Example script `batch-segmentanalysis-all-Xdiscs` is located in `Additional_scripts` folder.
+
+The resulting data folder should have the following structure:
+    
+    cytocountsforler
+        - disks
+            - all
+                -l<length>-cytocounts
+            - nr
+                -l<length>-cytocounts
+        - zones
+            - all
+                -l<length>-cytocounts
+            - nr
+                -l<length>-cytocounts
+
+The `all` and `nr` folders contain data for all fragment  and only for non-repeatable segments
+
+The file names in the folder is consist from the zone number and disk number.
+For _Drosophila melanogaster_ X-chromosome there are 19 zones and 6 disks (A-F) in each zone. 
+So the file 123.txt corresponds to the disk 12C
+
+The pre-calculated archive for _Drosophila melanogaster_ X-chromosome is available here: 
+https://drive.google.com/file/d/1AOrQ06x6_oek3sfDhYZNr-pw_sNdpPe0/view?usp=sharing
+
+#### Ectopics data
+Currently the ectopic data are organized in set of 1-dimensional file tables
+The data format change to more convenient 2D-matrix is under development now. 
+
+The ectopic data folder should have the following structure:
+
+    ectopicsdataforler
+        - strain 1
+            - disks
+            - zones
+        - strain 2
+            - disks
+            - zones
+
+The file names follows the same structure as for cytocounts FMF data
+* The file name for zones is just a number of zone
+* The file name for disk is consist for zone (1-19) and number of disk 1-6. So the file 123.csv represents the disk 12C
+
+The sample data archive for _Drosophila melanogaster_ X-chromosome is available here: 
+https://drive.google.com/file/d/1cPDRCaTrUlxa4Pp0fR4DxnP9NzEKLCgt/view?usp=sharing
+
 ## Test run examples
 Generate homology data for Drosophila genome, included in examples data set 
-
 `./segmentanalysis.py -v -s 30 -d 2.5 examples/dm6.nounmapped.fa.gz :X:11982050:12772070 examples/DmelMapTable.160615c.bed`
 
 View homology graph together with ectopics contacts frequency
-
 `/genomecorrelation.py -m -c X,2L examples/dm6.nounmapped.fa.gz.X-11982050-12772070/cytocounts.l30-merged.txt examples/Berlin.ectopics.tsv`
 
 User can run this test by executing *runtest.sh* script:
-
 `./runtest.sh`
 
-
-
-Resulting data are grouped by genome intervals (chunks) and by cytobands (if cytoband data is available)
-
-First script `segmentanalysis.py` splits segment into set of short (20 - 40 kb) fragments,
-then splits chromosome into a set of long (10 kb by default) chunks, and seeks for positions where these fragments match with the genome.
-Then it computes frequencies of occurrence for segments within a chromosome,
-makes table of the match frequencies normalized by chunks, and calculates fragments matching frequency by cytobands, 
-if cytoband information is provided.
-
-Second script `genomecorrelation.py` plots homology level graphs (both grouped by chunks or by cytobands),
-and calculated correlation of homology level with experimental data, if provided.
