@@ -29,7 +29,7 @@ parser.add_argument("-N",  "--nearest", action='store_true',
                     help='Perform nearest calculations. WARNING: in the current version is very time-consuming due to non-optimal algorithm.')
 
 args = parser.parse_args()
-
+args.outDir = '.' # Quick fix to workaround not implemented output directory selection
 frd = args.fmfGenome # fragmentsdir
 ectd = args.ectopicsData  # ectopicsdir
 
