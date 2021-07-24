@@ -1,0 +1,6 @@
+X	atgtacatacatacatacatacatacatac	4616717
+X	gtacatacatacatacatacatacatacat	4616719
+X	gtatgtacatacatacatacatacatacat	4616715
+X	tacatacatacatacatacatacatacata	682175,3364464,3364468,3658688,4616720,4616724,6480699,8372088,8372092,15814618
+X	tatgtacatacatacatacatacatacata	4616716,7111236
+X	tgtacatacatacatacatacatacataca	4616718

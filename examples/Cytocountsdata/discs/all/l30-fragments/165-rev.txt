@@ -1,0 +1,4 @@
+X	acatatgtatgtatgtatgtatgtatgtat	12754854
+X	cactagctgagtaacgggtatctgatagtc	711056,3794892,3803985,17622285,20674659,21133064,21421795,22602454
+X	ggatcggatcggatcggatcggatgggatc	12503842
+X	tacatatgtatgtatgtatgtatgtatgta	12754853

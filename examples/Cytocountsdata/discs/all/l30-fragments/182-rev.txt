@@ -1,0 +1,4 @@
+X	acatacatacatatgtacatatgtacatat	18141126
+X	cacccatccatccatccatccatccatcca	19408416
+X	ccacccatccatccatccatccatccatcc	19408415
+X	tacatacatacatatgtacatatgtacata	18141125
