@@ -1,0 +1,12 @@
+length	rho	p	total number of correlations	number of significant correlations	rho_sterr	p_sterr
+10	-0.052	0.105	19	2	0.546	0.07
+15	-0.557	0.105	19	2	0.023	0.07
+20	-0.059	0.211	19	4	0.31	0.094
+25	-0.557	0.053	19	1	nan	0.051
+30	-0.482	0.053	19	1	nan	0.051
+35	-0.465	0.053	19	1	nan	0.051
+40	-0.465	0.053	19	1	nan	0.051
+45	-0.455	0.053	19	1	nan	0.051
+50	no	0.0	19	0	nan	0.0
+55	no	0.0	19	0	nan	0.0
+60	no	0.0	19	0	nan	0.0

@@ -1,0 +1,9 @@
+name1	name2	prob_cor	prob_p	cordistr1	cordistr2	probdistr1	probdistr2
+25	25	0.835000	0.042000	norm	not-norm	r	not-norm
+30	30	0.709000	0.001000	not-norm	not-norm	r	not-norm
+35	35	0.991000	0.000000	norm	not-norm	r	not-norm
+40	40	0.496000	0.003000	norm	not-norm	r	not-norm
+45	45	0.035000	0.000000	not-norm	not-norm	r	not-norm
+50	50	0.230000	0.000000	norm	not-norm	not-norm	not-norm
+55	55	0.225000	0.001000	norm	not-norm	not-norm	not-norm
+60	60	0.627000	0.028000	norm	not-norm	not-norm	not-norm
