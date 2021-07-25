@@ -100,6 +100,7 @@ if args.include is not None:
 
 # Generating random fragments from selected region
 for fragmentSize in fragmentSizes:
+    rawCounts = {}
     normalizedCounts = {}
     cytomapCounts = {}
     for direction, segmentSeq in segmentSeqs.items():
@@ -124,6 +125,10 @@ for fragmentSize in fragmentSizes:
                 if args.verbose:
                     print('Balcklisted and included {} fragments'.format(oldFragmentsCount - len(fragments)))
 
+        if len(fragments) == 0:
+            print("No fragments selected for region {}, size {}".format(args.segment, fragmentSize))
+            exit(-1)
+
         # IV. SEARCH OF MATCHING FRAGMENTS
         chrFragmentsPositions = segmentsearch.searchFragments(genome, fragments, args.verbose)
         if not args.nodump and fragmentSize >= args.mindumpsize:
@@ -134,11 +139,15 @@ for fragmentSize in fragmentSizes:
         # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(chrFragmentsPositions, chunkSize)
         counts = segmentstatistics.chunksToCounts(chrPositionsChunks, genome, chunkSize)
+         
         if segmentGenome is genome:  # Removing counts inside fragment
             if args.verbose:
                 print('Setting to zero counts for chunks {}:{}-{}'.format(segment.chromosome,
                       segment.start // chunkSize, segment.stop // chunkSize))
             segmentstatistics.excludeIntervalFromCounts(counts, segment, chunkSize)
+        rawCounts[direction] = counts
+        
+        
         # Normalizing counts
         if args.verbose:
             print('Normalising matches')
@@ -146,7 +155,7 @@ for fragmentSize in fragmentSizes:
         if args.verbose:
             print('Dumping normalized counts')
         countsFileName = '{}/ncounts.l{:02d}-{}-{}.txt'.format(outputFolder, fragmentSize, segment.start, direction,)
-        segmentutils.dumpNCounts(countsFileName, normalizedCounts[direction], chunkSize)
+        segmentutils.dumpCounts(countsFileName, normalizedCounts[direction], chunkSize, countsFormat='10.4f')
 
         # VI. GROUPING BY CYTOBANDS
         if args.cytomap is not None:
@@ -158,12 +167,27 @@ for fragmentSize in fragmentSizes:
             segmentutils.dumpCytoCouns(cytoCountsFileName, cytomap, cytomapCounts[direction])
 
     # Outputting merged counts
+    
+    if args.verbose:
+        print('Dumping merged raw counts')
+    countsFileName = '{}/rawcounts.l{:02d}-{}-merged.txt'.format(outputFolder, fragmentSize, segment.start)
+    
+    mergedRawCounts = {
+        chromosome: (rawCounts['dir'][chromosome] + rawCounts['rev'][chromosome])
+        for chromosome in rawCounts['dir'].keys()}
+    
+    segmentutils.dumpCounts(countsFileName, mergedRawCounts, chunkSize, countsFormat='10d', skipZeros = True)
+            
+    
+    
     nCountsMergedFileName = '{}/ncounts.l{:02d}-{}-merged.txt'.format(outputFolder,fragmentSize,segment.start)
     #Corrected filename!!!!
     mergedCounts = {
         chromosome: (normalizedCounts['dir'][chromosome] + normalizedCounts['rev'][chromosome]) / 2
         for chromosome in normalizedCounts['dir'].keys()}
-    segmentutils.dumpNCounts(nCountsMergedFileName, mergedCounts, chunkSize)
+    segmentutils.dumpCounts(nCountsMergedFileName, mergedCounts, chunkSize, countsFormat='10.4f')
+    
+    
     if args.cytomap is not None:
         cytoCountsMergedFileName = '{}/cytocounts.l{:02d}-{}-merged.txt'.format(outputFolder, fragmentSize,segment.start)
         mergedCytoCounts = (cytomapCounts['dir'] + cytomapCounts['rev']) / 2
