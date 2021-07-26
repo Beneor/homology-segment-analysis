@@ -2,6 +2,8 @@
 import random
 from collections import defaultdict,Counter
 
+warnFragmentCount = 500
+
 try:
     import \
         ahocorasick as aho_corasick  # Fast and memory efficient library for exact or approximate multi-pattern string search
@@ -85,6 +87,9 @@ def searchFragments(genome, fragments, verbose=False):
         
         for fragment in chrFragmentsPositions[chrId]: # Checking for duplicated fragments
             if fragmentsCounter[fragment] > 1: # Duplicating positions list for each repeated fragment
+                if fragmentsCounter[fragment] > warnFragmentCount:
+                    print("! WARNING: Overpresented k-mer. May cause high memory consumption")
+                    print("k-mer {}:{} counts".format(fragment, fragmentsCounter[fragment]))
                 chrFragmentsPositions[chrId][fragment] = chrFragmentsPositions[chrId][fragment] * fragmentsCounter[fragment]
     if verbose:
         print('Aho-Corasick search finished')
