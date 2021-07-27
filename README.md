@@ -8,7 +8,8 @@ the frequencies of matched fragments (FMF) and any other genome data.
 In example data the frequencies of ectopic contacts (FEC) between the 
 Drosophyla polytene chromosome sections are used.
 
-The software capabilities
+## The software capabilities
+
 * Finds k-mers of the provided DNA sequence with genome and computes their 
 frequencies (frequencies of matched fragments FMF).
 * Calculates a correlation between FMF and numeric data specified for genome (for example, FEC).
@@ -21,6 +22,7 @@ This program is licensed under GNU GPLv3 licence: https://www.gnu.org/licenses/g
 # Installation 
 The software is written using Python language version 3.
 In addition to main Python package, it uses the following Python modules:
+
 * Aho-Corasick for fast fragments search.
 * Numpy and Scipy for correlation analysis.
 * Matplotlib for plotting graphs.
