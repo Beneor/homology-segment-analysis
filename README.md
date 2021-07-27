@@ -38,6 +38,7 @@ https://conda.io/en/latest/miniconda.html
 
 ## Creating Conda environment
 Execute the following commands from your shell
+
     conda create --name py3 python=3.8
     conda activate py3
     conda config --add channels conda-forge
