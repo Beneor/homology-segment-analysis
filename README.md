@@ -121,7 +121,9 @@ Start and stop locations also can be omitted to use the whole FASTA record.
 * `--nodump` - Do not save found fragme### Data preparation
 * `--mindumpsize` - Minimum size of fragment to store exact locations in file. Default 20
 
-
+* ` -b repeats.txt` - To exclude repeat. The file containing repeats is: `./repeats.txt`.
+* ` -i include.txt` - To include specific fragments containing repeats after repeats exclusion. 
+The file containing fragments to include is: `./include.txt`. Note that the included sequences must be of the same length as the length of fragments. 
 
 ### Usage example
 Example script `batch-segmentanalysis-all-Xdiscs` is located in 
@@ -129,16 +131,21 @@ Example script `batch-segmentanalysis-all-Xdiscs` is located in
 in the base folder to compute FMF (for all X chromosome disc=sections, 
 no fragments excluding, fragment lengths 30 and 50 nt).
 Folders containing files with FMF data and fragments are written 
-(or must be manually placed) to `example\Results` folder.
+to `.\example` folder.
 For example, `dm6.onlyX.fa.gz.X-103614-408582` folder containes FMF 
 data and fragments for 103614-408582 bp area of the X chromosome. 
-Files are named as follows: 
+
+Files are named as follows:
+
 `cytocounts.lN-A-B.txt` - files contining normalized FMF values for 
 chunks united to sections (cytobands).
+
 `ncounts.lN-A-B.txt` - files containing normalized FMF valus for chunks
  not united to cytobands.
+ 
 `fragments.lN-A-B.txt`- files containing matching fragment sequences and 
-their locations onin genome.
+their locations in genome.
+
 `lN` - fragment length (e.g. `l30` - 30 nt).
 `A` - the cytoband start position (e.g. `103614`)
 `B` - `dir`, `rev` or `merged` (fragments of direct, reverse or both DNA 
@@ -151,6 +158,8 @@ The content is arranged by the fragment sequnces.
 
 ## Data preparation for analysis of FMF - FEC correlations.
 The pre-calculated matrix of FMF must be built before running `analysis.py` script.
+All folders containing the calculated FMF data must be placed to `examples/Results` folder
+
 The script `Filesmodification.py` in `./examples` folder must be run to 
 arrange FMF and fragment files for further analysis,
 placing them to appropriate folders of the ./cytocountData folder 
@@ -162,6 +171,7 @@ of computations performed at the previous stage:
 `discs` - with division into sections; 
 `zones` - without division into sections; 
 `all` - all fragments, `nr` - no repeats. 
+ 
 The FMF and fragment files are placed to the folder named 
 according to the user choice:
 Example: `discs/all/l30-cytocounts` - the folder containing FMF for all 
@@ -196,7 +206,7 @@ For example, the file 123.txt corresponds to the section 12C.
 
 The example FMF and fragments data precalculated using the example script 
 `batch-segmentanalysis-all-Xdiscs` (sections=discs, all fragments, fragment lengths 30 and 50) 
-are given in `cytocountsData-examples` folder.
+are given in `Cytocountdata` folder.
 
 ## Ectopics data (FEC)
 Currently FEC are organized in set of 1-dimensional file tables.
@@ -235,7 +245,7 @@ for the same pair of sections, unspecific correlation - for the different pairs 
 2.) For statistically significant correlations: calculation of the average 
 rho values (R) and the proportion of significant correlations (P). 
 The data are saved in: 
-`./analysis/Correlation/Group_name/Group_name-60-analysis-average-correlations.xls`. 
+`./Correlation/Group_name/Group_name-60-analysis-average-correlations.xls`. 
 The files content: the average rho (R) and P values and their statistical 
 errors, calculated at all fragment lengths. 
 Group_name is notated as A-B-C-D; A - strain, B - discs or zones, 
@@ -247,8 +257,8 @@ using the proportion test.
 R and P are compared for different fragment lengths or for the same 
 fragment length with different parameter sets (Group_name). Thereby all 
 the compared groups differ in exactly one parameter.
-The data are saved in `./analysis/MW-analysis/diff-length/Correlations-Group_name1-Group_name2-MW-test.xls` 
-and `./analysis/MW-analysis/diff-parameters/Correlations-Group_name1-Group_name2-MW-test.xls`, respectively.
+The data are saved in `./MW-analysis/diff-length/Correlations-Group_name1-Group_name2-MW-test.xls` 
+and `./MW-analysis/diff-parameters/Correlations-Group_name1-Group_name2-MW-test.xls`, respectively.
 The files content: name 1 and name 2 - the fragment lengths for Group 1 
 and Group 2, prob_cor and prob_p - statistical sinificance of hypothesis 
 that the values are the same for R values and P values, respectively. 
@@ -258,7 +268,7 @@ are assayed as well: norm - normal distribution , not-norm - the distribution is
 4.) For FEC and FMF data obtained for all the X chromosome parts of a 
 specific length (D): calculation of the average R and P values. 
 Calculations are performed for specific paramenter sets (Group_name). 
-The data are saved in: `./analysis/Nearest/Group_name/l-nearest-av-y.xls`, 
+The data are saved in: `./Nearest/Group_name/l-nearest-av-y.xls`, 
 l - the short fragment length, y - specific or unspecific correlation.
 The files content: area - D length (in sections), average_correlation 
 and average share - R and P values averaged for all the chromosome 
@@ -267,7 +277,7 @@ parts of the D length.
 5.) For two different groups (1 and 2) and D: comparison of the average 
 R values using the Mann-Whitney U-test and the average P values using 
 the proportion test.
-The data are saved in: `./analysis/MW-analysis/nearest/Archive/Nearest-Group_name1-Group_name2-l-avcorr.xls`; 
+The data are saved in: `./MW-analysis/nearest/Archive/Nearest-Group_name1-Group_name2-l-avcorr.xls`; 
 1 - Group_name 1, 2 - Group_name 2, l - the short fragment length.
 The files content: segmentlength - D (in sections), avcor_p and 
 avprob_p - R and P values averaged for all chromosome segments of 
@@ -276,44 +286,43 @@ the averaged R and P for groups 1 and 2. Only the data for
 prob_cor or prob_p < 0.05 are given. R and P distributions are assayed as well.
  
 General run syntax is following: 
-`analysis.py <cytocountsData> <Xectopicsdata> [--nearest]` 
+`./analysis.py <Cytocountsdata> <Xectopicsdata> [--nearest]` 
 
 The main arguments are:
-+ `cytocountsData` - Folder containing pre-calculated data with cytocounts.
++ `Cytocountsdata` - Folder containing pre-calculated data with cytocounts.
 + `Xectopicsdata` - optional tab-delimeted file containing ectopic contacts data
 
 ### Optional arguments
 + `strain1` - Name of the first strain to analyse. Default: CS
 + `strain2` - Name of the second strain to analyse. Default: agn
 + `-h, --help` -     Show help message and exit
-+ `-s, --fragmentsizes` -- Set of fragment sizes to search. Default: 55,60
++ `-s, --fragmentsizes` -- Set of fragment sizes to search. Default: 30,50
 + `-N,  --nearest` - Perform nearest calculations. Default: No The part 
 of the application is currently not refactored, so using it is not so fast as other scripts.
 
 ### Output data examples
 After the analysis is completed, the data folder should have the following structure:
 
-    analysis
-        - Correlations
-            - folder Group_name (e.g. 'CS-discs-all-specific': specific correlation for CS strain, discs=sections, all fragments)
-                - Discs
-                    -working files *.csv3 containing only statistically significant Spearman rho values and significaтсу levels, for fragments of specific length (e.g. l10: 10-specifcor.csv2)
-                - Archive
-                    -working files *.csv2 containing Spearman rho values and significaтсу levels for all sections, for fragments of specific length (e.g. l10: 10-specifcor.csv2)
-                - files Group_name-60-analysis-average-correlations.xls
-        - MW-analysis
-            - diff-length
-                - files Correlations-Group_name1-Group_name2-MW-test.xls
-            - diff-parameters
-                - files Correlations-Group_name1-Group_name2-MW-test.xls
-            - nearest
-                - Archive
-                     - files Nearest-Group_name1-Group_name2-l-avcorr.xls
-        - Nearest
-            - folder Group_name (e.g. 'CS-discs-all-specific': specific correlation for CS strain, discs=sections, all fragments)
-                - files *.l-nearest-av-y.xls
+    - Correlations
+        - folder Group_name (e.g. 'CS-discs-all-specific': specific correlation for CS strain, discs=sections, all fragments)
+            - Discs
+                -working files *.csv3 containing only statistically significant Spearman rho values and significaтсу levels, for fragments of specific length (e.g. l10: 10-specifcor.csv3)
+            - Archive
+                -working files *.csv2 containing Spearman rho values and significaтсу levels for all sections, for fragments of specific length (e.g. l10: 10-specifcor.csv2)
+            - files Group_name-60-analysis-average-correlations.xls
+    - MW-analysis
+        - diff-length
+            - files Correlations-Group_name1-Group_name2-MW-test.xls
+        - diff-parameters
+            - files Correlations-Group_name1-Group_name2-MW-test.xls
+        - nearest
+            - Archive
+                    - files Nearest-Group_name1-Group_name2-l-avcorr.xls
+    - Nearest
+        - folder Group_name (e.g. 'CS-discs-all-specific': specific correlation for CS strain, discs=sections, all fragments)
+            - files *.l-nearest-av-y.xls
 
-The example of the analysis data is given in `./analysis/analysis-example`.           
+The example of the analysis data is given in `./examples/analysis-example`.           
 
 
 
