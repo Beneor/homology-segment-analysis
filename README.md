@@ -117,15 +117,17 @@ Start and stop locations also can be omitted to use the whole FASTA record.
                         example 5 means that each 5-th letter will be start of
                         fragment
 * `-c, --chunk`  - Chunk size to divide chromosome, in kilobases. Default: 10. 
-                        
+                       
 * `--nodump` - Do not save found fragme### Data preparation
 * `--mindumpsize` - Minimum size of fragment to store exact locations in file. Default 20
-
-* ` -b repeats.txt` - To exclude repeat. The file containing repeats is: `./repeats.txt`.
-* ` -i include.txt` - To include specific fragments containing repeats after repeats exclusion. 
-The file containing fragments to include is: `./include.txt`. Note that the included sequences must be of the same length as the length of fragments. 
+* `-b, --blacklist` - List of fragment to forcedly exclude from search. 
+Can be used to exclude overpresented repeats. The example file containing repeats: `./repeats.txt`.
+* `-i, --include` - List of fragments to forcedly include in search.  
+The example file containing fragments to include is: `./include.txt`. Note that the excluede and included sequences must be 
+of the same length as the length of fragments. 
 
 ### Usage example
+
 Example script `batch-segmentanalysis-all-Xdiscs` is located in 
 `Additional_scripts` folder and must be run 
 in the base folder to compute FMF (for all X chromosome disc=sections, 
@@ -160,11 +162,27 @@ The content is arranged by the fragment sequnces.
 The pre-calculated matrix of FMF must be built before running `analysis.py` script.
 All folders containing the calculated FMF data must be placed to `examples/Results` folder
 
+### Calculating FMF fro whole chromosome
+
+The `fmf_chromosome.sh` script is used to calculate FMF for one particular chromosome each chromosome bands.
+The script running format is following:
+
+`./fmf_chromosome.sh <genome> <cytobands> <chromosome>`
+
+It created the batch file to process all bands and runs in parallel  
+the `segmentanalysis.py` script.
+
+Example: `./fmf_chromosome.sh examples/dm6.onlyX.fa.gz examples/DmelMapTable.160615c.bed X`
+
+Run parallel calculations for Drosophila X-chromosome
+
+### FMF data processing
+
 The script `Filesmodification.py` in `./examples` folder must be run to 
 arrange FMF and fragment files for further analysis,
 placing them to appropriate folders of the ./cytocountData folder 
 
-Running the script: `./examples python3 Filesmodification.py`
+Running the script: `cd examples && python3 Filesmodification.py`
 
 The user is asked to specify the type of the folder depending on the type 
 of computations performed at the previous stage: 
