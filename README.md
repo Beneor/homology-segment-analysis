@@ -126,44 +126,42 @@ Can be used to exclude overpresented repeats. The example file containing repeat
 The example file containing fragments to include is: `./include.txt`. Note that the excluede and included sequences must be 
 of the same length as the length of fragments. 
 
-### Usage example
+### Output data
 
-Example script `batch-segmentanalysis-all-Xdiscs` is located in 
-`Additional_scripts` folder and must be run 
-in the base folder to compute FMF (for all X chromosome disc=sections, 
-no fragments excluding, fragment lengths 30 and 50 nt).
-Folders containing files with FMF data and fragments are written 
-to `.\example` folder.
+Folders containing files with FMF data and fragments are written to the
+same folder, where input genome file is located. The folder name is constructed from genome file name and segment.
 For example, `dm6.onlyX.fa.gz.X-103614-408582` folder containes FMF 
-data and fragments for 103614-408582 bp area of the X chromosome. 
+data and fragments for 103614-408582 bp area of the _Drosophila_ X-chromosome. 
 
-Files are named as follows:
+#### Output files naming
 
-`cytocounts.lN-A-B.txt` - files contining normalized FMF values for 
+* `cytocounts.lN-A-B.txt` - files contining normalized FMF values for 
 chunks united to sections (cytobands).
-
-`ncounts.lN-A-B.txt` - files containing normalized FMF valus for chunks
+* `ncounts.lN-A-B.txt` - files containing normalized FMF valus for chunks
  not united to cytobands.
- 
-`fragments.lN-A-B.txt`- files containing matching fragment sequences and 
+* `fragments.lN-A-B.txt`- files containing matching fragment sequences and 
 their locations in genome.
 
-`lN` - fragment length (e.g. `l30` - 30 nt).
-`A` - the cytoband start position (e.g. `103614`)
-`B` - `dir`, `rev` or `merged` (fragments of direct, reverse or both DNA 
+* `lN` - fragment length (e.g. `l30` - 30 nt).
+* `A` - the cytoband start position (e.g. `103614`)
+* `B` - `dir`, `rev` or `merged` (fragments of direct, reverse or both DNA 
 strand of the chromosome segment, respectively)
 
-The cytocount and ncount files content: chromosome name, start,stop, 
+The cytocount and ncount files content: chromosome name, start, stop, 
 cytoband or chunk name, normalized FMF.
 The fragment files content: chromosome name, fragment sequence, locations. 
 The content is arranged by the fragment sequnces.
 
-## Data preparation for analysis of FMF - FEC correlations.
+### Usage example
+
+`./segmentanalysis.py -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:11982050:12772075 examples/DmelMapTable.160615c.bed`
+Run FMF calculation for _Drosophila_ X-chromosome 11AB region
+
+## Data preparation for analysis of FMF-FEC correlations.
 The pre-calculated matrix of FMF must be built before running `analysis.py` script.
 All folders containing the calculated FMF data must be placed to `examples/Results` folder
 
-### Calculating FMF fro whole chromosome
-
+### Calculating FMF for whole chromosome
 The `fmf_chromosome.sh` script is used to calculate FMF for one particular chromosome each chromosome bands.
 The script running format is following:
 
@@ -171,10 +169,15 @@ The script running format is following:
 
 It created the batch file to process all bands and runs in parallel  
 the `segmentanalysis.py` script.
+Other run parameters (repeats to blacklist, fragment sizes) are hardcoded in the header section of the script.
 
-Example: `./fmf_chromosome.sh examples/dm6.onlyX.fa.gz examples/DmelMapTable.160615c.bed X`
+#### Usage example
 
-Run parallel calculations for Drosophila X-chromosome
+ `./fmf_chromosome.sh examples/dm6.onlyX.fa.gz examples/DmelMapTable.160615c.bed X`
+
+Run parallel FMF calculations for Drosophila X-chromosome
+(for all X chromosome disc=sections, 
+no fragments excluding, fragment lengths 30 and 50 nt).
 
 ### FMF data processing
 
