@@ -167,9 +167,8 @@ The script running format is following:
 
 `./fmf_chromosome.sh <genome> <cytobands> <chromosome>`
 
-It created the batch file to process all bands and runs in parallel  
-the `segmentanalysis.py` script.
-Other run parameters (repeats to blacklist, fragment sizes) are hardcoded in the header section of the script.
+It creatsd the batch file to process all bands and runs it in parallel the `segmentanalysis.py` script.
+Other run parameters (blacklist, fragment sizes) are hardcoded in the header section of the script.
 
 #### Usage example
 
@@ -314,8 +313,8 @@ The main arguments are:
 + `Xectopicsdata` - optional tab-delimeted file containing ectopic contacts data
 
 ### Optional arguments
-+ `strain1` - Name of the first strain to analyse. Default: CS
-+ `strain2` - Name of the second strain to analyse. Default: agn
++ `strain1` - Name of the first strain to analyse. Default: _CS_
++ `strain2` - Name of the second strain to analyse. Default: _agn_
 + `-h, --help` -     Show help message and exit
 + `-s, --fragmentsizes` -- Set of fragment sizes to search. Default: 30,50
 + `-N,  --nearest` - Perform nearest calculations. Default: No The part 

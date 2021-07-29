@@ -10,7 +10,18 @@ programDescription = '''
 This script arranges files produced by segmentanalysis in folder 'examples', placing them to folder Cytocountsdata: fragments for bands or zones: 'discs' or 'zones' folder; fragments without and with exclusion of DNA repeats: 'all' or 'nr' folder; fragments sequences or fragments frequencies  - 'l*-fragments' or 'l*-cytocounts' folder, accodring to fragments length *.
 '''
 
+# Moving all folders to Results
+resultsPath = "Results"
+cytocountsPath= "Cytocountsdata"
+if not os.path.exists(resultsPath):
+    os.makedirs(resultsPath)
+
+for src_dir, dirs, files in os.walk("."):
+    if src_dir.startswith("./dm6.onlyX.fa.gz.X-"):
+        shutil.move(src_dir, resultsPath)
+
 a=input('Enter chromosomal areas: "discs" or "zones": ')
+collectMode=a
 b= input('Enter fragments, "all" or "nr": ')
 path='./'+a+'/'+b
 os.mkdir('./'+a)
@@ -99,4 +110,8 @@ for path, dirs, files in os.walk(path):
         file1.close()
 f.close()
         
+if not os.path.exists(cytocountsPath):
+    os.makedirs(cytocountsPath)  
+  
+shutil.move(collectMode, cytocountsPath)
     
