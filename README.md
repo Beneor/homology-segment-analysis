@@ -50,6 +50,7 @@ Execute the following commands from your shell
 If installation of pyahocorasick module fails, try to install 
 Visual Studio build tools from here: 
 https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017
+Note: currently, there may be problems with using analysis.py script with Windows. 
 
 ### Linux users note
 All Linux distributions contains Python3 by default. 
