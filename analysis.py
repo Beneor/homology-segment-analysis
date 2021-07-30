@@ -64,9 +64,15 @@ os.mkdir(os.path.join(args.outDir, 'MW-analysis'))
 # 1.2.1. Mann-Whitney U analysis of correlations for the data sets with the same chief parameters (different fragment lengths) 
 resultdir = os.path.join(args.outDir, 'MW-analysis', 'diff-lengths')
 os.mkdir(resultdir)
+print("Analysing MW")
 for t in an.parcomb(n=4, dic=pardicts):
-    if 'zones' in t:  # Excluding data for zones from analysis
+    #print("Analyzing combination: ",t)
+    
+    if not os.path.exists(os.path.join(frd,t[1],t[2])):
+        print("Skipping analysis for non-existing combination " + '-'.join(t))
         continue
+    print("Analyzing combination " + '-'.join(t))
+
     an.statmw(*t, *t, x='Correlations', u=True)
 for f in glob.glob('*' + '.xls'):
     an.shutil.move(f, resultdir)
@@ -74,10 +80,16 @@ for f in glob.glob('*' + '.xls'):
 # 1.2.2. Mann-Whitney U analysis of correlations for the same fragment lengths with one different chief parameter.
 resultdir = './MW-analysis/diff-parameters'
 os.mkdir(resultdir)
+print("Analysing MW- diff-parameters")
 for t in an.parcombmdiff(n=4, dic=pardicts, v=1):
-    if 'zones' in t:
-        continue  # Excluding data for zones from analysis
+    
+    if not os.path.exists(os.path.join(frd,t[1],t[2])) or not os.path.exists(os.path.join(frd,t[5],t[6])):
+        print("Skipping analysis for non-existing combination " + '-'.join(t[:4]) + " against " + '-'.join(t[4:]))
+        continue
+    print("Analyzing combination "  + '-'.join(t[:4]) + " against " + '-'.join(t[4:]))
+
     an.statmw(*t, x='Correlations', u=False)
+
 for f in glob.glob('*' + '.xls'):
     shutil.move(f, resultdir)
 
@@ -86,8 +98,11 @@ if args.nearest:
     os.mkdir('./Nearest/')
 
     for t in an.parcomb(n=4, dic=pardicts):
-        if 'zones' in t:
+        if not os.path.exists(os.path.join(frd,t[1],t[2])):
+            print("Skipping 'nearest' analysis for non-existing combination " + '-'.join(t))
             continue
+        print("Analyzing 'nearest' combination " + '-'.join(t))
+    
         if 'specific' in t:
             an.neardisccor(*t, lengths=lengthstuple1, fragmentsdir=frd, ectopicsdir=ectd)
         if 'unspecific' in t:

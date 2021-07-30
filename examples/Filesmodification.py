@@ -50,7 +50,7 @@ for root, dirs, files in os.walk("Results"):
             shutil.move (os.path.join(root, filename), (os.path.join(path, filename)))
 for root, dirs, files in os.walk("Results"):
     for filename in files:
-        if filename.endswith("merged.txt"):            
+        if filename.startswith("cytocounts") and filename.endswith("merged.txt"):            
             shutil.move (os.path.join(root, filename), (os.path.join(path, filename)))
 for root, dirs, files in os.walk("Results"):
     for filename in files:

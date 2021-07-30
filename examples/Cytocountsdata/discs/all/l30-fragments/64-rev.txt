@@ -1,5 +1,0 @@
-X	acatacatacatatgtacatatgtatgtac	19149835
-X	catacatacatatgtacatatgtatgtaca	19149836
-X	gtacatacatacatatgtacatatgtatgt	19149833
-X	tacatacatacatatgtacatatgtatgta	19149834
-X	tgtacatacatacatatgtacatatgtatg	19149832

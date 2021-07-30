@@ -77,9 +77,9 @@ The `segmentanalysis.py` script splits DNA segment into a set of short
 of long intervals (chunks; 10 kb by default), and seeks for k-mers in 
 the chunks. Then it computes the frequencies 
 of match normalized by chunks (the average FMF is 1 for all chunks) and 
-calculates k-mers matching frequency for the long chromosome zones, 
-if the information about zones coordinates is provided. 
-By default: zones are the Drosophila polytene chromosome cytoband, 
+calculates k-mers matching frequencies for the long chromosome areas, 
+if the information about areas coordinates is provided. 
+By default: areas are the Drosophila polytene chromosome cytoband, 
 or sections (X1A - 4102E; file containing sections borders: 
 `./examples/DmelMapTable.160615c.bed`) 
 or zones without division into sections (X1 - 4102; file containing zone 
@@ -118,7 +118,7 @@ Start and stop locations also can be omitted to use the whole FASTA record.
                         fragment
 * `-c, --chunk`  - Chunk size to divide chromosome, in kilobases. Default: 10. 
                        
-* `--nodump` - Do not save found fragme### Data preparation
+* `--nodump` - Do not save found fragments
 * `--mindumpsize` - Minimum size of fragment to store exact locations in file. Default 20
 * `-b, --blacklist` - List of fragment to forcedly exclude from search. 
 Can be used to exclude overpresented repeats. The example file containing repeats: `./repeats.txt`.
@@ -159,7 +159,6 @@ Run FMF calculation for _Drosophila_ X-chromosome 11AB region
 
 ## Data preparation for analysis of FMF-FEC correlations.
 The pre-calculated matrix of FMF must be built before running `analysis.py` script.
-All folders containing the calculated FMF data must be placed to `examples/Results` folder
 
 ### Calculating FMF for whole chromosome
 The `fmf_chromosome.sh` script is used to calculate FMF for one particular chromosome each chromosome bands.
@@ -173,6 +172,8 @@ Other run parameters (blacklist, fragment sizes) are hardcoded in the header sec
 #### Usage example
 
  `./fmf_chromosome.sh examples/dm6.onlyX.fa.gz examples/DmelMapTable.160615c.bed X`
+ 
+ Calculation for _Drosophila_ X chromosome for two fragment lengths takes about 5-10 minutes on 6-cores CPU.
 
 Run parallel FMF calculations for Drosophila X-chromosome
 (for all X chromosome disc=sections, 
@@ -184,7 +185,7 @@ The script `Filesmodification.py` in `./examples` folder must be run to
 arrange FMF and fragment files for further analysis,
 placing them to appropriate folders of the ./cytocountData folder 
 
-Running the script: `cd examples && python3 Filesmodification.py`
+Running the script from the `./examples` folder: `python3 Filesmodification.py`
 
 The user is asked to specify the type of the folder depending on the type 
 of computations performed at the previous stage: 
@@ -224,9 +225,9 @@ Note that the section notation changes in the new file names:
 "A, B, C, D, E, F" are replaced by "1, 2, 3, 4, 5, 6", so "1A" is "11" now, "13F" is "136", etc. 
 For example, the file 123.txt corresponds to the section 12C.
 
-The example FMF and fragments data precalculated using the example script 
-`batch-segmentanalysis-all-Xdiscs` (sections=discs, all fragments, fragment lengths 30 and 50) 
-are given in `Cytocountdata` folder.
+The example FMF and fragments data precalculated for the whole X chromosome 
+(sections=discs, all fragments, fragment lengths 30 and 50) 
+are given in `Cytocountdata-examples.tar.gz` archive.
 
 ## Ectopics data (FEC)
 Currently FEC are organized in set of 1-dimensional file tables.
@@ -342,12 +343,14 @@ After the analysis is completed, the data folder should have the following struc
         - folder Group_name (e.g. 'CS-discs-all-specific': specific correlation for CS strain, discs=sections, all fragments)
             - files *.l-nearest-av-y.xls
 
-The example of the analysis data is given in `./examples/analysis-example`.           
+The example of the analysis data is given in `./examples/analysis-examples.tar.gz` archive.           
 
+### Run example
+`./analysis.py examples/Cytocountsdata examples/Xectopicsdata/`
 
 
 ## Generation of arranged fragment list
-The script `Fragments-counts.py` in `./additional scripts` folder should be used to generate the list of short matching fragment 
+The script `Fragments-counts.py` in `./Additional scripts` folder should be used to generate the list of short matching fragment 
 of a specific length arranged according to the number of their occurrence in genome. 
 Place this script in the folder containing fragment sequences (`-l<length>-fragments`) and run there: 
 `python3 Fragments-counts.py`
