@@ -1,7 +1,7 @@
 import io
 from dataclasses import dataclass
-
-from segmentanalysis.typedef import Genome
+from typing import TextIO
+from segmentanalysis.typedef import Genome, DnaSequence
 
 
 @dataclass(repr=False)
@@ -11,13 +11,13 @@ class GenomeInterval:
     chromosome, start, stop, optional interval name and numeric score
     """
 
-    chromosome: str
+    chromosome: DnaSequence
     start: int
     stop: int
     name: str = ""
     score: int = 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{self.chromosome}\t{self.start}\t{self.stop}\t{self.name}\t{self.score}"
         )
@@ -26,22 +26,23 @@ class GenomeInterval:
 GenomeFeatures = list[GenomeInterval]
 
 
-def strToBed(line, separator="\t"):
+def strToBed(line: str, separator: str = "\t"):
     """
     Converts text line to BED interval
     :param line: string containing bed interval
     :param separator: separator used to split values in line
     :return: GenomeInterval instance containing readed interval
     """
-    fields = line.strip().split(separator)
+    fields: list[str] = line.strip().split(separator)
     chromosome = fields[0]
     start, stop = [int(coord) for coord in fields[1:3]]
     intervalID = fields[3] if len(fields) > 3 else ""
-    value = fields[4] if len(fields) > 4 else 0
+    value = int(fields[4]) if len(fields) > 4 else 0
+
     return GenomeInterval(chromosome, start, stop, intervalID, value)
 
 
-def readBedFile(bedFile: io.FileIO) -> GenomeFeatures:
+def readBedFile(bedFile: TextIO) -> GenomeFeatures:
     """
     Reads Information from file in BED notation. only 5 BED columns are supported
     :param bedFile: file IO - BED file to read
@@ -56,7 +57,7 @@ def readBedFile(bedFile: io.FileIO) -> GenomeFeatures:
     return genomeFeatures
 
 
-def writeBedFile(bedFile: io.FileIO, genomeFeatures: GenomeFeatures) -> None:
+def writeBedFile(bedFile: TextIO, genomeFeatures: GenomeFeatures) -> None:
     """
     Reads Information from file in BED notation. only 5 BED columns are supported
     :param bedFile: file IO - BED file to write

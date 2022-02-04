@@ -11,7 +11,7 @@ from scipy.stats.stats import pearsonr, spearmanr
 
 # Adding local path to import program modules
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
-from segmentanalysis import segmentutils
+from segmentanalysis import utils
 
 
 programDescription = '''

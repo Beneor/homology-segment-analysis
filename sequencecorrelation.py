@@ -13,7 +13,7 @@ from os.path import join, abspath, curdir
 
 # Adding local path to import program modules
 sys.path.append(abspath(join(curdir, 'segmentanalysis')))
-from segmentanalysis import segmentutils,segmentstatistics
+from segmentanalysis import utils,segmentstatistics
 
 programDescription = '''
 

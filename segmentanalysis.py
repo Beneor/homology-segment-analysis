@@ -4,12 +4,13 @@ import argparse
 import sys
 import os
 from os.path import join, abspath, curdir
+from collections import Counter
 
 # Adding local path to import program modules
 sys.path.append(abspath(join(curdir, "segmentanalysis")))
-from segmentanalysis import segmentutils
-from segmentanalysis import segmentsearch, segmentstatistics, genomeinterval
-from segmentanalysis.typedef import Genome
+from segmentanalysis import utils
+from segmentanalysis import fragmentssearch, segmentstatistics, genomeinterval
+from segmentanalysis.typedef import DnaSequence, Genome, FragmentsCounter
 from segmentanalysis.genomeinterval import GenomeInterval
 
 programDescription = """
@@ -105,15 +106,15 @@ args = parser.parse_args()
 
 if args.verbose:
     print("Loading genome from FASTA file")
-genome: Genome = segmentutils.readFasta(
-    segmentutils.openMaybeGzipped(args.fastaFileName)
+genome: Genome = utils.readGenome(
+    utils.openMaybeGzipped(args.fastaFileName)
 )
 
 # 1. Selection of chromosome segment
 locationPos = args.segment.index(":")
 # Determining do we have second file name in location, and reading second genome if necessary
 segmentGenome: Genome = (
-    segmentutils.readFasta(open(args.segment[:locationPos], "r"))
+    utils.readGenome(open(args.segment[:locationPos], "r"))
     if locationPos != 0
     else genome
 )
@@ -131,7 +132,7 @@ except Exception as err:
 segmentSeqFor: str = segmentGenome[segment.chromosome][segment.start : segment.stop]
 segmentSeqs: dict[str, str] = {
     "dir": segmentSeqFor,
-    "rev": segmentutils.revcomp(segmentSeqFor),
+    "rev": utils.revcomp(segmentSeqFor),
 }
 
 # 2. Size of chunks and selected fragments
@@ -145,23 +146,21 @@ outputFolder = "{}.{}-{}-{}".format(
 if os.path.exists(outputFolder):
     if not args.force:
         print(
-            "Output folder {} already exists\nPlease delete and resubmit".format(
-                outputFolder
-            )
+            f"Output folder {outputFolder} already exists\nPlease delete and resubmit"
         )
         exit(0)
 else:
     os.makedirs(outputFolder)
 
 if args.cytomap is not None:
-    with open(args.cytomap) as cytomapFile:
+    with utils.openMaybeGzipped(args.cytomap) as cytomapFile:
         cytomap = genomeinterval.readBedFile(cytomapFile)
 
 if args.blacklist is not None:
-    fragmentsBlackList = set(segmentutils.readList(args.blacklist))
+    fragmentsBlackList: set[DnaSequence] = set(utils.readList(args.blacklist))
 
 if args.include is not None:
-    fragmentsIncludeList = set(segmentutils.readList(args.include))
+    fragmentsIncludeList: set[DnaSequence] = set(utils.readList(args.include))
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 
@@ -174,16 +173,14 @@ for fragmentSize in fragmentSizes:
         # III. GENERATING FRAGMENTS
         if args.verbose:
             print(
-                "Generating fragments in {} direction for size: {}".format(
-                    direction, fragmentSize
-                )
+                f"Generating fragments in {direction} direction for size: {fragmentSize}"
             )
         if args.fragmentdensity is not None:
-            fragments = segmentsearch.chooseRandomFragments(
+            fragments = fragmentssearch.chooseRandomFragments(
                 segmentSeq, fragmentSize, args.fragmentdensity
             )
         else:
-            fragments = segmentsearch.makeFragments(segmentSeq, fragmentSize)
+            fragments = fragmentssearch.makeFragments(segmentSeq, fragmentSize)
 
         if args.include is not None:
             if args.blacklist is not None:
@@ -192,17 +189,15 @@ for fragmentSize in fragmentSizes:
                     fr
                     for fr in fragments
                     if not (
-                        segmentutils.isContainSubFragments(fr, fragmentsBlackList)
-                        and not segmentutils.isContainSubFragments(
+                        utils.isContainSubFragments(fr, fragmentsBlackList)
+                        and not utils.isContainSubFragments(
                             fr, fragmentsIncludeList
                         )
                     )
                 ]
                 if args.verbose:
                     print(
-                        "Balcklisted and included {} fragments".format(
-                            oldFragmentsCount - len(fragments)
-                        )
+                        f"Balcklisted and included {oldFragmentsCount - len(fragments)} fragments"
                     )
         else:
             if args.blacklist is not None:
@@ -210,34 +205,32 @@ for fragmentSize in fragmentSizes:
                 fragments = [
                     fr
                     for fr in fragments
-                    if not segmentutils.isContainSubFragments(fr, fragmentsBlackList)
+                    if not utils.isContainSubFragments(fr, fragmentsBlackList)
                 ]
                 if args.verbose:
                     print(
-                        "Balcklisted and included {} fragments".format(
-                            oldFragmentsCount - len(fragments)
-                        )
+                        f"Balcklisted and included {oldFragmentsCount - len(fragments)} fragments"
                     )
 
         if len(fragments) == 0:
             print(
-                "No fragments selected for region {}, size {}".format(
-                    args.segment, fragmentSize
-                )
+                f"No fragments selected for region {args.segment}, size {fragmentSize}, direction {direction}"
             )
-            exit(-1)
+            continue
 
         # IV. SEARCH OF MATCHING FRAGMENTS
-        chrFragmentsPositions = segmentsearch.searchFragments(
-            genome, fragments, args.verbose
+
+        fragmentsCounter: FragmentsCounter = Counter(fragments)
+
+        chrFragmentsPositions = fragmentssearch.searchFragmentsGenome(
+            genome, fragmentsCounter, args.verbose
         )
         if not args.nodump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print("Dumping fragments to text file")
-            fragmentsFileName = "{}/fragments.l{:02d}-{}-{}.txt".format(
-                outputFolder, fragmentSize, segment.start, direction
-            )
-            segmentutils.dumpFragmentsToFile(fragmentsFileName, chrFragmentsPositions)
+            fragmentsFileName = f"{outputFolder}/fragments.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
+            fragmentssearch.dumpFragmentsToFile(fragmentsFileName, fragmentsCounter, chrFragmentsPositions)
+
         # v. CONVEERTING TO CHUNKS AND NORMALIZING
         chrPositionsChunks = segmentstatistics.locationsToChunks(
             chrFragmentsPositions, chunkSize
@@ -246,12 +239,12 @@ for fragmentSize in fragmentSizes:
 
         if segmentGenome is genome:  # Removing counts inside fragment
             if args.verbose:
+                chunkStart, chunkStop = (
+                    segment.start // chunkSize,
+                    segment.stop // chunkSize,
+                )
                 print(
-                    "Setting to zero counts for chunks {}:{}-{}".format(
-                        segment.chromosome,
-                        segment.start // chunkSize,
-                        segment.stop // chunkSize,
-                    )
+                    f"Setting to zero counts for chunks {segment.chromosome}:{chunkStart}-{chunkStop}"
                 )
             segmentstatistics.excludeIntervalFromCounts(counts, segment, chunkSize)
         rawCounts[direction] = counts
@@ -262,10 +255,8 @@ for fragmentSize in fragmentSizes:
         normalizedCounts[direction] = segmentstatistics.normalizeCounts(counts)
         if args.verbose:
             print("Dumping normalized counts")
-        countsFileName = "{}/ncounts.l{:02d}-{}-{}.txt".format(
-            outputFolder, fragmentSize, segment.start, direction,
-        )
-        segmentutils.dumpCounts(
+        countsFileName = f"{outputFolder}/ncounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
+        utils.dumpCounts(
             countsFileName, normalizedCounts[direction], chunkSize, countsFormat="10.4f"
         )
 
@@ -276,10 +267,8 @@ for fragmentSize in fragmentSizes:
             cytomapCounts[direction] = segmentstatistics.countsToCytomap(
                 cytomap, normalizedCounts[direction], chunkSize
             )
-            cytoCountsFileName = "{}/cytocounts.l{:02d}-{}-{}.txt".format(
-                outputFolder, fragmentSize, segment.start, direction
-            )
-            segmentutils.dumpCytoCouns(
+            cytoCountsFileName = f"{outputFolder}/cytocounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
+            utils.dumpCytoCouns(
                 cytoCountsFileName, cytomap, cytomapCounts[direction]
             )
 
@@ -287,8 +276,8 @@ for fragmentSize in fragmentSizes:
 
     if args.verbose:
         print("Dumping merged raw counts")
-    countsFileName = "{}/rawcounts.l{:02d}-{}-merged.txt".format(
-        outputFolder, fragmentSize, segment.start
+    countsFileName = (
+        f"{outputFolder}/rawcounts.l{fragmentSize:02d}-{segment.start}-merged.txt"
     )
 
     mergedRawCounts = {
@@ -296,12 +285,12 @@ for fragmentSize in fragmentSizes:
         for chromosome in rawCounts["dir"].keys()
     }
 
-    segmentutils.dumpCounts(
+    utils.dumpCounts(
         countsFileName, mergedRawCounts, chunkSize, countsFormat="10d", skipZeros=True
     )
 
-    nCountsMergedFileName = "{}/ncounts.l{:02d}-{}-merged.txt".format(
-        outputFolder, fragmentSize, segment.start
+    nCountsMergedFileName = (
+        f"{outputFolder}/ncounts.l{fragmentSize:02d}-{segment.start}-merged.txt"
     )
     # Corrected filename!!!!
     mergedCounts = {
@@ -311,13 +300,13 @@ for fragmentSize in fragmentSizes:
         / 2
         for chromosome in normalizedCounts["dir"].keys()
     }
-    segmentutils.dumpCounts(
+    utils.dumpCounts(
         nCountsMergedFileName, mergedCounts, chunkSize, countsFormat="10.4f"
     )
 
     if args.cytomap is not None:
-        cytoCountsMergedFileName = "{}/cytocounts.l{:02d}-{}-merged.txt".format(
-            outputFolder, fragmentSize, segment.start
+        cytoCountsMergedFileName = (
+            f"{outputFolder}/cytocounts.l{fragmentSize:02d}-{segment.start}-merged.txt"
         )
         mergedCytoCounts = (cytomapCounts["dir"] + cytomapCounts["rev"]) / 2
-        segmentutils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)
+        utils.dumpCytoCouns(cytoCountsMergedFileName, cytomap, mergedCytoCounts)
