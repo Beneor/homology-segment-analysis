@@ -84,7 +84,7 @@ def dumpCounts(
     nCounts: GenomeCounts,
     chunkSize: int,
     countsFormat: str = "10d",
-    skipZeros: bool = True,
+    skipZeros: bool = False,
 ) -> None:
     """
     writes calculated counts of fragments to text file

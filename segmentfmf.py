@@ -221,21 +221,23 @@ for fragmentSize in fragmentSizes:
                 fragmentsFileName, fragmentsCounter, fragmentsLocations
             )
 
-        rawCountsFileName = f"{outputFolder}/rawcounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
+        rawCountsFileName = (
+            f"{outputFolder}/rawcounts.l{fragmentSize:02d}-"
+            f"{segment.start}-{direction}.txt"
+        )
         utils.dumpCounts(rawCountsFileName, rawCounts[direction], chunkSize)
 
-        if segmentGenome is genome:  # Removing counts inside fragment
+        # Removing counts inside initial segment
+        if segmentGenome is genome:
+            chunkStart, chunkStop = (
+                segment.start // chunkSize,
+                segment.stop // chunkSize,
+            )
             if args.verbose:
-                chunkStart, chunkStop = (
-                    segment.start // chunkSize,
-                    segment.stop // chunkSize,
-                )
                 print(
                     f"Setting to zero counts for chunks {segment.chromosome}:{chunkStart}-{chunkStop}"
                 )
-            fragmentstatistics.excludeIntervalFromCounts(
-                rawCounts[direction], segment, chunkSize
-            )
+            normalizedCounts[direction][segment.chromosome][chunkStart:chunkStop] = 0
 
         if args.verbose:
             print("Dumping normalized counts")

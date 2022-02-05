@@ -61,13 +61,6 @@ def fragmentsToCounts(
     return genomeCounts
 
 
-def excludeIntervalFromCounts(
-    counts: GenomeCounts, interval: GenomeInterval, chunkSize: int
-) -> None:
-    for chunk in range(interval.start // chunkSize, interval.stop // chunkSize):
-        counts[interval.chromosome][chunk] = 0
-
-
 def normalizeCounts(counts: GenomeCounts) -> GenomeCounts:
     """
     Normalizes counts by mean count value
