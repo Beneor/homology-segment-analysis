@@ -1,6 +1,6 @@
 import io
 from dataclasses import dataclass
-from typing import TextIO
+from typing import TextIO, Union
 from segmentanalysis.typedef import Genome, DnaSequence
 
 
@@ -15,7 +15,7 @@ class GenomeInterval:
     start: int
     stop: int
     name: str = ""
-    score: int = 0
+    score: Union[int, float] = 0
 
     def __repr__(self) -> str:
         return (
@@ -33,12 +33,19 @@ def strToBed(line: str, separator: str = "\t") -> GenomeInterval:
     :param separator: separator used to split values in line
     :return: GenomeInterval instance containing readed interval
     """
+
     fields: list[str] = line.strip().split(separator)
     chromosome = fields[0]
     start, stop = [int(coord) for coord in fields[1:3]]
     intervalID = fields[3] if len(fields) > 3 else ""
-    value = int(fields[4]) if len(fields) > 4 else 0
-
+    value: Union[int, float]
+    if len(fields) > 4:
+        try:
+            value = int(fields[4])
+        except ValueError:
+            value = float(fields[4])
+    else:
+        value = 0
     return GenomeInterval(chromosome, start, stop, intervalID, value)
 
 
@@ -48,12 +55,7 @@ def readBedFile(bedFile: TextIO) -> GenomeFeatures:
     :param bedFile: file IO - BED file to read
     :return: GenomeFeatures - list of GenomeInterval objects
     """
-    genomeFeatures = []
-    for line in bedFile:
-        if line.strip()[0] == "#":  # Skipping comment
-            continue
-        interval = strToBed(line)
-        genomeFeatures.append(interval)
+    genomeFeatures = [strToBed(line) for line in bedFile if line.strip()[0] != "#"]
     return genomeFeatures
 
 
