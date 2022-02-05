@@ -163,6 +163,7 @@ if args.cytomap is not None:
 
 # II. ITERATION THROUGH ALL FRAGMENT SIZES AND DIRECTIONS
 for fragmentSize in fragmentSizes:
+
     rawCounts = {}
     normalizedCounts = {}
     cytomapCounts = {}
@@ -189,8 +190,8 @@ for fragmentSize in fragmentSizes:
             fragments = [
                 fr
                 for fr in fragments
-                if (not utils.isContainSubFragments(fr, fragmentsBlackSet))
-                or utils.isContainSubFragments(fr, fragmentsIncludeSet)
+                if (not fragmentssearch.isContainSubFragments(fr, fragmentsBlackSet))
+                or fragmentssearch.isContainSubFragments(fr, fragmentsIncludeSet)
             ]
             if args.verbose:
                 print(f"Balcklisted {oldFragmentsCount - len(fragments)} fragments")
@@ -201,29 +202,27 @@ for fragmentSize in fragmentSizes:
             )
             continue
 
-        # V. SEARCH OF MATCHING FRAGMENTS
-        fragmentsCounter: FragmentsCounter = Counter(fragments)
+        fragmentsCounter = Counter(fragments)
 
-        chrFragmentsPositions = fragmentssearch.searchFragmentsGenome(
-            genome, fragmentsCounter, args.verbose
+        # V. SEARCH OF MATCHING FRAGMENTS
+        (
+            fragmentsLocations,
+            rawCounts[direction],
+            normalizedCounts[direction],
+        ) = fragmentssearch.calculateFmfCounts(
+            genome, fragmentsCounter, chunkSize, args.verbose,
         )
+
         if not args.nodump and fragmentSize >= args.mindumpsize:
             if args.verbose:
                 print("Dumping fragments to text file")
             fragmentsFileName = f"{outputFolder}/fragments.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
             fragmentssearch.dumpFragmentsToFile(
-                fragmentsFileName, fragmentsCounter, chrFragmentsPositions
+                fragmentsFileName, fragmentsCounter, fragmentsLocations
             )
 
-        # VI. CONVERTING FRAGMENT POSITIONS TO COUNTS BY CHUNKS
-
-        counts = fragmentstatistics.fragmentsToCounts(
-            genome, chrFragmentsPositions, fragmentsCounter, chunkSize
-        )
-
-        countsFileName = f"{outputFolder}/rawcounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
-
-        utils.dumpCounts(countsFileName, counts, chunkSize)
+        rawCountsFileName = f"{outputFolder}/rawcounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
+        utils.dumpCounts(rawCountsFileName, rawCounts[direction], chunkSize)
 
         if segmentGenome is genome:  # Removing counts inside fragment
             if args.verbose:
@@ -234,13 +233,10 @@ for fragmentSize in fragmentSizes:
                 print(
                     f"Setting to zero counts for chunks {segment.chromosome}:{chunkStart}-{chunkStop}"
                 )
-            fragmentstatistics.excludeIntervalFromCounts(counts, segment, chunkSize)
-        rawCounts[direction] = counts
+            fragmentstatistics.excludeIntervalFromCounts(
+                rawCounts[direction], segment, chunkSize
+            )
 
-        # Normalizing counts
-        if args.verbose:
-            print("Normalising matches")
-        normalizedCounts[direction] = fragmentstatistics.normalizeCounts(counts)
         if args.verbose:
             print("Dumping normalized counts")
         countsFileName = f"{outputFolder}/ncounts.l{fragmentSize:02d}-{segment.start}-{direction}.txt"
@@ -265,15 +261,12 @@ for fragmentSize in fragmentSizes:
     countsFileName = (
         f"{outputFolder}/rawcounts.l{fragmentSize:02d}-{segment.start}-merged.txt"
     )
-
     mergedRawCounts = fragmentstatistics.mergeCounts(rawCounts["dir"], rawCounts["rev"])
-
     utils.dumpCounts(countsFileName, mergedRawCounts, chunkSize, countsFormat="12.6f")
 
     nCountsMergedFileName = (
         f"{outputFolder}/ncounts.l{fragmentSize:02d}-{segment.start}-merged.txt"
     )
-
     mergednCounts = fragmentstatistics.mergeCounts(
         normalizedCounts["dir"], normalizedCounts["rev"]
     )

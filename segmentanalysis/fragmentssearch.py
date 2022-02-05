@@ -1,15 +1,18 @@
 # This module contains all code related to searching of small fragments in chromosome chunks
 import random
 from typing import Iterator
-from collections import defaultdict
+from collections import defaultdict, Counter
 from segmentanalysis.typedef import (
     DnaSequence,
     Genome,
     FragmentPosition,
     GenomeFragmentsLocations,
     FragmentsCounter,
+    GenomeCounts,
 )
 from segmentanalysis.consts import outputInfoChunkLength
+from segmentanalysis.utils import revcomp
+from segmentanalysis import fragmentstatistics
 
 # Fast and memory efficient library for exact or approximate multi-pattern string search
 try:
@@ -63,6 +66,41 @@ def chooseRandomFragments(
     return fragments
 
 
+def isContainSubFragments(fragment: DnaSequence, subStrSet: set[DnaSequence]) -> bool:
+    """
+    Returns True if fragment contains at least one substring from subStrSet
+    :param fragment: fragment sequence
+    :param subStrSet: set of substrings to search
+    :return: boolean search result
+    """
+    for s in subStrSet:
+        if s in fragment:
+            return True
+    # Cycle ended and we haven't found anything
+    return False
+
+
+def filterFragments(
+    fragments: list[DnaSequence],
+    blacklist: set[DnaSequence],
+    include: set[DnaSequence] = set(),
+) -> list[DnaSequence]:
+    """
+    Filters out all fragments, containing any substring from the `blacklist` set
+    However, fragment containing at least one `include` pattern will not be blacklisted
+    :param fragments: initial list of fragments
+    :param blacklist: set of patterns to filter fragments
+    :param include: set of patterns protecting fragments from filtering out
+    """
+    filteredFragments = [
+        fr
+        for fr in fragments
+        if (not isContainSubFragments(fr, blacklist))
+        or isContainSubFragments(fr, include)
+    ]
+    return filteredFragments
+
+
 def searchFragmentsChromosome(
     automation: aho_corasick.Automaton, chromosome: DnaSequence
 ) -> Iterator[FragmentPosition]:
@@ -77,7 +115,7 @@ def searchFragmentsChromosome(
         yield fragment, position
 
 
-def searchFragmentsGenome(
+def searchFragmentsInGenome(
     genome: Genome, fragmentsCounter: FragmentsCounter, verbose: bool = False
 ) -> GenomeFragmentsLocations:
     """
@@ -119,6 +157,27 @@ def searchFragmentsGenome(
     if verbose:
         print("Aho-Corasick search finished")
     return chrFragmentsPositions
+
+
+def calculateFmfCounts(
+    genome: Genome,
+    fragmentsCounter: FragmentsCounter,
+    chunkSize: int,
+    verbose: bool = False,
+) -> tuple[GenomeFragmentsLocations, GenomeCounts, GenomeCounts]:
+
+    # V. SEARCH OF MATCHING FRAGMENTS
+    fragmentsLocations = searchFragmentsInGenome(genome, fragmentsCounter, verbose)
+
+    # VI. CONVERTING FRAGMENT POSITIONS TO COUNTS BY CHUNKS
+    rawCounts = fragmentstatistics.fragmentsToCounts(
+        genome, fragmentsLocations, fragmentsCounter, chunkSize
+    )
+
+    # VII. Normalizing counts
+    normalizedCounts = fragmentstatistics.normalizeCounts(rawCounts)
+
+    return fragmentsLocations, rawCounts, normalizedCounts
 
 
 def dumpFragmentsToFile(

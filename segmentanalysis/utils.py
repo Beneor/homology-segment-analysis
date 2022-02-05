@@ -119,17 +119,3 @@ def dumpCytoCouns(
     for i, interval in enumerate(cytomap):
         cytoCountsStr = f"{interval.chromosome}\t{interval.start}\t{interval.stop}\t{interval.name}\t{cytoCounts[i]}\n"
         cytoCountsFile.write(cytoCountsStr)
-
-
-def isContainSubFragments(fragment: DnaSequence, subStrSet: set[DnaSequence]) -> bool:
-    """
-    Returns True if fragment contains at least one substring from subStrSet
-    :param fragment: fragment sequence
-    :param subStrSet: set of substrings to search
-    :return: boolean search result
-    """
-    for s in subStrSet:
-        if s in fragment:
-            return True
-    # Cycle ended and we haven't found anything
-    return False
