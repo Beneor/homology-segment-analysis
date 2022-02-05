@@ -1,20 +1,24 @@
 black
 # Homology segment analysis
 
-The application estimates the DNA sequence homology, finding short
-fragments (k-mers) that match for the two extended genomic areas.
-It also calculates correlations between
-the frequencies of matched fragments (FMF) and any other genome data.
-In example data the frequencies of ectopic contacts (FEC) between the
-Drosophyla polytene chromosome sections are used.
+The application estimates the regions of DNA sequence homology
+by calculating the frequencies of matched fragments (FMF) across different DNA regions
+The FMF is a frequency of short fragments (k-mers) that match for the two
+DNA areas.
+The application also calculates correlations between FMF
+ and any other genome-related data.
+In example data we use the frequencies of ectopic contacts (FEC) between the
+Drosophila polytene chromosome sections.
 
 ## The software capabilities
 
 * Finds k-mers of the provided DNA sequence with genome and computes their
 frequencies (frequencies of matched fragments FMF).
-* Calculates a correlation between FMF and numeric data specified for genome (for example, FEC).
-* Compare the correlation levels and proportions of significant correlations calculated at different paramaters.
-* Plots homology level graph.
+* Calculates a correlation between FMF and numeric data specified for genome
+* (for example, FEC).
+* Compare the correlation levels and proportions of significant correlations calculated
+at different parameters.
+* Plots FMF and custom data graph.
 
 ## Licence
 This program is licensed under GNU GPLv3 licence: https://www.gnu.org/licenses/gpl.html
