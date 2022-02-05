@@ -3,10 +3,8 @@ import re
 import gzip
 from typing import TextIO
 
-from segmentanalysis.typedef import (
-    DnaSequence,
-    Genome
-)
+from segmentanalysis.typedef import DnaSequence, Genome, Counts, GenomeCounts
+from segmentanalysis.genomeinterval import GenomeFeatures
 
 
 # === DNA sequence utilities ===
@@ -82,8 +80,12 @@ def readGenome(fastaFile: TextIO) -> Genome:
 
 
 def dumpCounts(
-        countsFileName: str, nCounts, chunkSize, countsFormat="10d", skipZeros=False
-):
+    countsFileName: str,
+    nCounts: GenomeCounts,
+    chunkSize: int,
+    countsFormat: str = "10d",
+    skipZeros: bool = True,
+) -> None:
     """
     writes calculated counts of fragments to text file
     :param countsFileName: name of file to write
@@ -103,7 +105,9 @@ def dumpCounts(
     countsFile.close()
 
 
-def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
+def dumpCytoCouns(
+    cytoCountsFileName: str, cytomap: GenomeFeatures, cytoCounts: Counts
+) -> None:
     """
     Writes cytomap counts to BED file : cytobans genome coordinates, band ID and counts
     :param cytoCountsFileName: name of file to write
@@ -113,13 +117,7 @@ def dumpCytoCouns(cytoCountsFileName, cytomap, cytoCounts):
     """
     cytoCountsFile = open(cytoCountsFileName, "w")
     for i, interval in enumerate(cytomap):
-        cytoCountsStr = "{}\t{}\t{}\t{}\t{}\n".format(
-            interval.chromosome,
-            interval.start,
-            interval.stop,
-            interval.name,
-            cytoCounts[i],
-        )
+        cytoCountsStr = f"{interval.chromosome}\t{interval.start}\t{interval.stop}\t{interval.name}\t{cytoCounts[i]}\n"
         cytoCountsFile.write(cytoCountsStr)
 
 

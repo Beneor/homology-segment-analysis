@@ -19,7 +19,7 @@ except ImportError as error:
     print(
         """Cannot import Aho-Corasick python module for fast fragment search
         https://pypi.org/project/pyahocorasick/
-        
+
         Try to install it by running "pip3 install pyahocorasick"
         or refer to module documentation
         For Windows Visual studio buildtools are required: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017"""
@@ -36,14 +36,14 @@ def makeFragments(segment: DnaSequence, fragmentLength: int) -> list[DnaSequence
     """
     # Collecting all fragments with potential duplicates
     fragments = [
-        segment[start: start + fragmentLength]
+        segment[start : start + fragmentLength]
         for start in range(len(segment) - fragmentLength)
     ]
     return fragments
 
 
 def chooseRandomFragments(
-        segment: DnaSequence, fragmentLength: int, fragmentDensity: float
+    segment: DnaSequence, fragmentLength: int, fragmentDensity: float
 ) -> list[DnaSequence]:
     """
     Generates set of unique random fragments from provided sequence
@@ -64,7 +64,7 @@ def chooseRandomFragments(
 
 
 def searchFragmentsChromosome(
-        automation: aho_corasick.Automaton, chromosome: DnaSequence
+    automation: aho_corasick.Automaton, chromosome: DnaSequence
 ) -> Iterator[FragmentPosition]:
     """
     Makes Aho-Corasick search for the provided chromosome sequence
@@ -78,7 +78,7 @@ def searchFragmentsChromosome(
 
 
 def searchFragmentsGenome(
-        genome: Genome, fragmentsCounter: FragmentsCounter, verbose: bool = False
+    genome: Genome, fragmentsCounter: FragmentsCounter, verbose: bool = False
 ) -> GenomeFragmentsLocations:
     """
     Finds multiple fragments in chromosome sequence
@@ -95,7 +95,7 @@ def searchFragmentsGenome(
         print(f"Making Aho-Corasick automation for {len(fragmentsCounter)} fragments")
     A = aho_corasick.Automaton()
     for idx, key in enumerate(
-            fragmentsCounter.keys()
+        fragmentsCounter.keys()
     ):  # Adding to automation all unique fragments
         A.add_word(key, (idx, key))
     A.make_automaton()
@@ -122,9 +122,9 @@ def searchFragmentsGenome(
 
 
 def dumpFragmentsToFile(
-        fragmentsFileName: str,
-        fragmentsCounter: FragmentsCounter,
-        fragmentsPositions: GenomeFragmentsLocations,
+    fragmentsFileName: str,
+    fragmentsCounter: FragmentsCounter,
+    fragmentsPositions: GenomeFragmentsLocations,
 ) -> None:
     """
     Writes set of fragments to file

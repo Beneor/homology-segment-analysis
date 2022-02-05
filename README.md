@@ -1,4 +1,4 @@
-
+black
 # Homology segment analysis
 
 The application estimates the DNA sequence homology, finding short

@@ -26,7 +26,7 @@ class GenomeInterval:
 GenomeFeatures = list[GenomeInterval]
 
 
-def strToBed(line: str, separator: str = "\t"):
+def strToBed(line: str, separator: str = "\t") -> GenomeInterval:
     """
     Converts text line to BED interval
     :param line: string containing bed interval
