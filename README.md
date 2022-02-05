@@ -64,16 +64,15 @@ Example for Ubuntu/Debian:
 ## The main program installation
 Just checkout from master branch.
 
-`git clone https://bitbucket.org/beneor/homology-segment-analysis.git`
+`git clone https://github.com/Beneor/homology-segment-analysis.git`
 
 Then navigate to program base folder and start.
 
 # Usage
 
-## Calculation of FMF for provided DNA sequence (segment) and the whole
-genome using segmentanalysis.py
+## Calculation of FMF for provided DNA sequence (segment) segmentfmf.py
 
-The `segmentanalysis.py` script splits DNA segment into a set of short
+The `segmentfmf.py` script splits DNA segment into a set of short
 (about 10 - 60 nt) fragments (k-mers), then splits the whole chromosome into a set
 of long intervals (chunks; 10 kb by default), and seeks for k-mers in
 the chunks. Then it computes the frequencies
@@ -89,14 +88,14 @@ Resulting data are grouped by chunks and by cytobands.
 
 General run syntax is following:
 
-`segmentanalysis.py <options> chromosomeseq segment [cytobands]`
+`segmentfmf.py <options> chromosomeseq segment [cytobands]`
 
 ### Main arguments
 The main arguments are
 
 +  `fastaFileName` -      FASTA file (may be gzipped) containing genome sequence
 +  `segment` -              segment of chromosome to analyze: file and location. See format notes below.
-+  `cytobands` - optional BED-format file containing locations of cytobands or any other intervals to group homology data.
++  `cytobands` - optional BED-format file (may be gzipped) containing locations of cytobands or any other intervals to group homology data.
 
 #### Segment notation
 **segment** option has a flexible format to handle multiple cases.
@@ -155,7 +154,7 @@ The content is arranged by the fragment sequnces.
 
 ### Usage example
 
-`./segmentanalysis.py -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:11982050:12772075 examples/DmelMapTable.160615c.bed`
+`./segmentfmf.py -s 30,50 -b repeats.txt -i include.txt examples/dm6.onlyX.fa.gz :X:11982050:12772075 examples/DmelMapTable.160615c.bed`
 Run FMF calculation for _Drosophila_ X-chromosome 11AB region
 
 ## Data preparation for analysis of FMF-FEC correlations.
@@ -167,7 +166,7 @@ The script running format is following:
 
 `./fmf_chromosome.sh <genome> <cytobands> <chromosome>`
 
-It creatsd the batch file to process all bands and runs it in parallel the `segmentanalysis.py` script.
+It creates the batch file to process all bands and runs it in parallel the `segmentfmf.py` script.
 Other run parameters (blacklist, fragment sizes) are hardcoded in the header section of the script.
 
 #### Usage example
@@ -357,19 +356,20 @@ Place this script in the folder containing fragment sequences (`-l<length>-fragm
 `python3 Fragments-counts.py`
 The result file `Result.csv` can be opened and analyzed using LibreOffice Calc. The file content: fragent number of occurrence (>10), fragment sequence.
 
-## Homology graph plotting using genomecorrelation.py
+## FMF graph plotting using plotfmf.py
 
-The `genomecorrelation.py` script plots homology level graphs (both grouped by chunks or by cytobands),
-and calculated correlation of homology level with experimental frequencies, if provided (by default: FEC).
+The `plotfmf.py` script plots FMF graphs (both grouped by chunks or by cytobands),
+and calculated correlation of FMF with experimental frequencies, if provided.
 
 General run syntax is the following:
 
-`genomecorrelation.py <options> homologyFileName [ectopicsFileName]`
+`plotfmf.py <options> fmfFileName [experimentFileName]`
 
 The main arguments are:
 
-+ `homologyFileName` - BED-formatted file holding homology data
-+ `ectopicsFileName` - optional tab-delimeted file containing ectopic contacts data
++ `fmfFileName` - BED-formatted file holding FMF data calculated by segmentfmf.py
++ `experimentFileName` - optional tab-delimeted file containing any experimental data
+for the same intervals as homologyFileName
 
 ### Optional arguments
 + `-h, --help` -           Show help message and exit
@@ -384,11 +384,5 @@ The main arguments are:
 
 
 ## Test run examples
-Generate homology data for Drosophila genome, included in examples data set
-`./segmentanalysis.py -v -s 30 -d 2.5 examples/dm6.nounmapped.fa.gz :X:11982050:12772070 examples/DmelMapTable.160615c.bed`
-
-View homology graph together with ectopics contacts frequency
-`/genomecorrelation.py -m -c X,2L examples/dm6.nounmapped.fa.gz.X-11982050-12772070/cytocounts.l30-merged.txt examples/Berlin.ectopics.tsv`
-
-User can run this test by executing *runtest.sh* script:
+User can run test by executing *run-test.sh* script:
 `./runtest.sh`

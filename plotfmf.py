@@ -16,7 +16,7 @@ from segmentanalysis.typedef import ChromosomeID
 
 
 programDescription = """
-This script makes plot of normalised fragment matching frequencies (FMF) calculated by segmentanalysis.py script.
+This script makes plot of normalised fragment matching frequencies (FMF) calculated by segmentfmf.py script.
 Script is able to make plots for counts normalized by chunks or by cytobands.
 If some experiments data for genome (for example ectopic contacts frequency) are available,
 script plots experimental data on the same graph and calculates correlation between FMF
